@@ -1,3 +1,4 @@
+
 // --- KHỞI TẠO & CẤU HÌNH ---
 const { createClient } = supabase;
 const SUPABASE_URL = 'https://qnqtkknzqewesxjoudhr.supabase.co';
@@ -27,7 +28,7 @@ let selectedYcImageFile = null; // Biến tạm để lưu file ảnh yêu cầu
 let currentEditingOrderItems = []; // Lưu các item gốc khi sửa đơn hàng
 let realtimeChannel = null; // Biến cho kênh realtime
 
-const PLACEHOLDER_IMAGE_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9IiNGRkZGRkYiIHN0cm9rZT0iI2RlZDJkNiIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2UtbGluZWNhcD0icm9ybmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ"tnIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ4PSIyIj48L3JlY3Q+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiIGZpbGw9IiNkZWQyZDYiIHN0cm9rZT0ibm9uZSI+PC9jaXJjbGU+PHBvbHlsaW5lIHBvaW50cz0iMjEgMTUgMTYgMTAgNCAxNCI+PC9wb2x5bGluZT48L3N2Zz4=';
+const PLACEHOLDER_IMAGE_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9IiNmMGYwZjAiIHN0cm9rZT0iI2NjY2NjYyIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIj48L3JlY3Q+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiPjwvY2lyY2xlPjxwb2x5bGluZSBwb2ludHM9IjIxIDE1IDE2IDEwIDUgMTciPjwvcG9seWxpbmU+PC9zdmc+';
 
 
 // --- HÀM UTILITY ---
@@ -330,6 +331,57 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         currentView = viewId;
         await loadDataForCurrentView();
+    }
+
+    async function showOrderDetailsFromLink(ma_nx) {
+        if (!ma_nx) return;
+
+        showLoading(true);
+        try {
+            await showView('view-don-hang');
+
+            const { data, error } = await sb.from('don_hang').select('*').eq('ma_nx', ma_nx).single();
+            if (error) throw error;
+            
+            if (data) {
+                await openDonHangModal(data, true);
+            } else {
+                showToast(`Không tìm thấy đơn hàng với mã: ${ma_nx}`, 'error');
+            }
+        } catch (error) {
+            console.error('Lỗi khi hiển thị chi tiết đơn hàng:', error);
+            showToast('Không thể tải chi tiết đơn hàng.', 'error');
+        } finally {
+            showLoading(false);
+        }
+    }
+    
+    async function filterSanPhamFromChiTiet(filterKey, filterValue) {
+        // 1. Reset San Pham filters state and UI
+        const spState = viewStates['view-san-pham'];
+        spState.searchTerm = '';
+        spState.filters = { ma_sp: [], ten_sp: [], phu_trach: [], ton_kho: '' };
+        
+        document.getElementById('sp-search').value = '';
+        document.getElementById('sp-filter-ton-kho').value = '';
+        document.querySelectorAll('#view-san-pham .filter-btn').forEach(btn => {
+            const btnBaseText = btn.textContent.split('--')[1].trim().split(' ')[0];
+            btn.innerHTML = `-- ${btnBaseText} --`;
+        });
+
+        // 2. Apply the new filter from Chi Tiet view
+        if (filterKey === 'ma_sp') {
+            spState.filters.ma_sp = [filterValue];
+            const btn = document.getElementById('sp-filter-ma-sp-btn');
+            btn.innerHTML = `-- Mã SP -- <span class="ml-1 font-bold">(1)</span>`;
+        } else if (filterKey === 'phu_trach') {
+            spState.filters.phu_trach = [filterValue];
+            const btn = document.getElementById('sp-filter-phu-trach-btn');
+            btn.innerHTML = `-- Phụ Trách -- <span class="ml-1 font-bold">(1)</span>`;
+        }
+
+        // 3. Switch view which will trigger data reload with the new filter
+        await showView('view-san-pham');
     }
 
     async function loadDataForCurrentView() {
@@ -897,9 +949,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     // --- QUẢN LÝ CHI TIẾT (VIEW 3) ---
-     function buildChiTietQuery() {
+    function buildChiTietQuery(selectString = '*', countOption = null) {
         const state = viewStates['view-chi-tiet'];
-        let query = sb.from('chi_tiet').select('*', { count: 'exact' });
+        let query = sb.from('chi_tiet').select(selectString, countOption ? { count: countOption } : undefined);
 
         // ** PHÂN QUYỀN **
         if (currentUser && currentUser.phan_quyen === 'User') {
@@ -920,9 +972,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         return query;
     }
+    
+    async function updateChiTietSummary() {
+        const summaryEl = document.getElementById('ct-summary-info');
+        summaryEl.textContent = 'Đang tính toán...';
+        try {
+            let query = buildChiTietQuery('loai, so_luong');
+            const { data, error } = await query;
+            if (error) throw error;
+    
+            let totalNhap = 0;
+            let totalXuat = 0;
+            
+            if (data) {
+                for (const item of data) {
+                    if (item.loai === 'Nhập') {
+                        totalNhap += item.so_luong;
+                    } else if (item.loai === 'Xuất') {
+                        totalXuat += item.so_luong;
+                    }
+                }
+            }
+            
+            summaryEl.innerHTML = `
+                <span class="text-green-600">Tổng Nhập: <strong>${totalNhap.toLocaleString()}</strong></span>
+                <span class="mx-2">|</span>
+                <span class="text-red-600">Tổng Xuất: <strong>${totalXuat.toLocaleString()}</strong></span>
+            `;
+    
+        } catch (error) {
+            console.error("Lỗi tính toán tổng hợp:", error);
+            summaryEl.textContent = 'Lỗi tính toán';
+        }
+    }
 
     async function fetchChiTiet(page = viewStates['view-chi-tiet'].currentPage) {
         showLoading(true);
+        updateChiTietSummary(); // Fire and forget calculation
         viewStates['view-chi-tiet'].currentPage = page;
         const state = viewStates['view-chi-tiet'];
 
@@ -931,7 +1017,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const from = isAll ? 0 : (page - 1) * parseInt(itemsPerPage);
         let to = isAll ? -1 : from + parseInt(itemsPerPage) - 1;
 
-        let query = buildChiTietQuery();
+        let query = buildChiTietQuery('*', 'exact');
+
         if (!isAll) query = query.range(from, to);
         query = query.order('thoi_gian', { ascending: false });
         
@@ -954,14 +1041,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             data.forEach(ct => {
                 ctTableBody.innerHTML += `
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${ct.ma_nx}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="#" class="view-order-link text-blue-600 hover:text-blue-800 hover:underline" data-ma-nx="${ct.ma_nx}">${ct.ma_nx}</a>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(ct.thoi_gian)}</td>
                         <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${ct.loai === 'Nhập' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${ct.loai}</span></td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ct.ma_sp}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline" data-action="view-product" data-ma-sp="${ct.ma_sp}">${ct.ma_sp}</a>
+                        </td>
                         <td class="px-6 py-4 text-sm text-gray-500 break-words">${ct.ten_sp || ''}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-700">${ct.so_luong}</td>
                         <td class="px-6 py-4 text-sm text-gray-500 break-words">${ct.muc_dich || ''}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ct.phu_trach || ''}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                             ${ct.phu_trach ? `<a href="#" class="text-blue-600 hover:text-blue-800 hover:underline" data-action="view-by-phu-trach" data-phu-trach="${ct.phu_trach}">${ct.phu_trach}</a>` : ''}
+                        </td>
                     </tr>
                 `;
             });
@@ -1301,11 +1394,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 keys = ["ma_sp", "ten_sp", "ton_dau", "nhap", "xuat", "ton_cuoi", "phu_trach"];
                 filename = "DanhSachSanPham.xlsx";
             } else { // ct
-                let ctQuery = isFiltered ? buildChiTietQuery() : sb.from('chi_tiet').select('*');
+                let query = isFiltered ? buildChiTietQuery('ma_nx, thoi_gian, loai, ma_sp, ten_sp, so_luong, muc_dich, phu_trach') : sb.from('chi_tiet').select('ma_nx, thoi_gian, loai, ma_sp, ten_sp, so_luong, muc_dich, phu_trach');
                 if (currentUser && currentUser.phan_quyen === 'User' && !isFiltered) {
-                    ctQuery = ctQuery.eq('phu_trach', currentUser.ho_ten);
+                    query = query.eq('phu_trach', currentUser.ho_ten);
                 }
-                query = ctQuery.select('ma_nx, thoi_gian, loai, ma_sp, ten_sp, so_luong, muc_dich, phu_trach');
                 headers = ["Mã NX", "Thời Gian", "Loại", "Mã SP", "Tên SP", "Số Lượng", "Mục Đích", "Phụ Trách"];
                 keys = ["ma_nx", "thoi_gian", "loai", "ma_sp", "ten_sp", "so_luong", "muc_dich", "phu_trach"];
                 filename = "ChiTietNhapXuat.xlsx";
@@ -1382,11 +1474,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     6: { cellWidth: 'auto' },
                 };
             } else { // ct
-                let ctQuery = isFiltered ? buildChiTietQuery() : sb.from('chi_tiet').select('*');
+                let query = isFiltered ? buildChiTietQuery('ma_nx, thoi_gian, loai, ma_sp, ten_sp, so_luong, muc_dich, phu_trach') : sb.from('chi_tiet').select('ma_nx, thoi_gian, loai, ma_sp, ten_sp, so_luong, muc_dich, phu_trach');
                  if (currentUser && currentUser.phan_quyen === 'User' && !isFiltered) {
-                    ctQuery = ctQuery.eq('phu_trach', currentUser.ho_ten);
+                    query = query.eq('phu_trach', currentUser.ho_ten);
                 }
-                query = ctQuery.select('ma_nx, thoi_gian, loai, ma_sp, ten_sp, so_luong, muc_dich, phu_trach');
                 head = [["Mã NX", "Thời Gian", "Loại", "Mã SP", "Tên SP", "SL", "Mục Đích", "Phụ Trách"]];
                 bodyKeys = ["ma_nx", "thoi_gian", "loai", "ma_sp", "ten_sp", "so_luong", "muc_dich", "phu_trach"];
                 title = "Báo Cáo Chi Tiết Nhập Xuất";
@@ -1603,6 +1694,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (activeProductDropdown && !activeProductDropdown.closest('.relative').contains(e.target)) {
             closeActiveProductDropdown();
+        }
+    });
+    
+    // Global ESC key listener
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (activeFilterPopover) {
+                closeActiveFilterPopover();
+            } else if (activeProductDropdown) {
+                closeActiveProductDropdown();
+            } else if (!document.getElementById('image-viewer-modal').classList.contains('hidden')) {
+                document.getElementById('image-viewer-modal').classList.add('hidden');
+            } else if (!document.getElementById('confirm-modal').classList.contains('hidden')) {
+                document.getElementById('confirm-cancel-btn').click();
+            } else if (!document.getElementById('export-modal').classList.contains('hidden')) {
+                document.getElementById('export-cancel-btn').click();
+            } else if (!document.getElementById('don-hang-modal').classList.contains('hidden')) {
+                document.getElementById('don-hang-modal').classList.add('hidden');
+            } else if (!document.getElementById('san-pham-modal').classList.contains('hidden')) {
+                document.getElementById('san-pham-modal').classList.add('hidden');
+            } else if (!document.getElementById('password-reset-modal').classList.contains('hidden')) {
+                document.getElementById('password-reset-modal').classList.add('hidden');
+            }
         }
     });
 
@@ -1892,6 +2006,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         viewStates['view-chi-tiet'].searchTerm = document.getElementById('ct-search').value;
         fetchChiTiet(1);
     }, 500));
+
+    document.getElementById('ct-table-body').addEventListener('click', async (e) => {
+        const target = e.target.closest('a');
+        if (!target) return;
+        
+        e.preventDefault();
+
+        if (target.classList.contains('view-order-link')) {
+            const ma_nx = target.dataset.maNx;
+            if (ma_nx) {
+                await showOrderDetailsFromLink(ma_nx);
+            }
+        } else if (target.dataset.action === 'view-product') {
+            const ma_sp = target.dataset.maSp;
+            if (ma_sp) {
+                await filterSanPhamFromChiTiet('ma_sp', ma_sp);
+            }
+        } else if (target.dataset.action === 'view-by-phu-trach') {
+            const phu_trach = target.dataset.phuTrach;
+            if (phu_trach) {
+                await filterSanPhamFromChiTiet('phu_trach', phu_trach);
+            }
+        }
+    });
 
     ['ct-filter-thoi-gian-from', 'ct-filter-thoi-gian-to', 'ct-filter-loai-don'].forEach(id => {
         document.getElementById(id).addEventListener('change', e => {
