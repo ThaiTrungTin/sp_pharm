@@ -1,11 +1,56 @@
 import { 
     sb, viewStates, cache, currentUser, PLACEHOLDER_IMAGE_URL,
-    showLoading, showToast, showConfirm, debounce, formatDate, renderPagination, openFilterPopover
+    showLoading, showToast, showConfirm, debounce, formatDate, renderPagination, openFilterPopover,
+    sanitizeFileName
 } from './app.js';
 
 let selectedYcImageFile = null;
 let currentEditingOrderItems = [];
 let activeProductDropdown = null;
+const FILE_BUCKET = 'hinh_anh_san_pham'; // Sử dụng lại bucket có sẵn để tránh lỗi cấu hình
+
+function bytesToSize(bytes) {
+   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+   if (bytes == 0) return '0 Byte';
+   const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+   return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
+}
+
+
+function validateDonHangModal() {
+    const saveBtn = document.getElementById('save-dh-btn');
+    if (!saveBtn) return;
+
+    let isValid = true;
+
+    // Check required header fields
+    if (!document.getElementById('dh-thoi-gian').value ||
+        !document.getElementById('dh-loai-don-modal').value ||
+        !document.getElementById('dh-yeu-cau').value ||
+        !document.getElementById('dh-ma-nx').value ||
+        !document.getElementById('dh-muc-dich').value.trim()) {
+        isValid = false;
+    }
+
+    const itemRows = document.querySelectorAll('.dh-item-row');
+    if (itemRows.length === 0) {
+        isValid = false;
+    }
+
+    for (const row of itemRows) {
+        if (!row.querySelector('.dh-item-ma-sp').value ||
+            isNaN(parseInt(row.querySelector('.dh-item-so-luong').value)) ||
+            parseInt(row.querySelector('.dh-item-so-luong').value) < 0) {
+            isValid = false;
+        }
+        if (row.querySelector('.dh-item-info').classList.contains('text-red-600')) {
+            isValid = false;
+        }
+    }
+
+    saveBtn.disabled = !isValid;
+}
+
 
 export function buildDonHangQuery() {
     const state = viewStates['view-don-hang'];
@@ -62,32 +107,61 @@ export async function fetchDonHang(page = viewStates['view-don-hang'].currentPag
 function renderDonHangTable(data) {
     const dhTableBody = document.getElementById('dh-table-body');
     dhTableBody.innerHTML = '';
-    if(data && data.length > 0) {
+    if (data && data.length > 0) {
         data.forEach(dh => {
             const isSelected = viewStates['view-don-hang'].selected.has(dh.ma_nx);
-            const imageYcHtml = dh.anh_yc_url
-                ? `<img src="${dh.anh_yc_url}" alt="Ảnh YC" class="w-12 h-12 object-cover rounded-md thumbnail-image" data-large-src="${dh.anh_yc_url}">`
-                : `<span class="text-gray-400 text-xs">Không có</span>`;
             
-            const mailHtml = dh.mail_url
-                ? `<a href="${dh.mail_url}" target="_blank" class="text-blue-600 hover:text-blue-800" title="Mở mail">
-                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                   </a>`
+            const imageCellContent = dh.anh_yc_url
+                ? `<div class="w-12 h-12 flex justify-center items-center"><img src="${dh.anh_yc_url}" alt="Ảnh YC" class="w-12 h-12 object-cover rounded-md thumbnail-image" data-large-src="${dh.anh_yc_url}"></div>`
                 : '';
+            const imageCellClass = dh.anh_yc_url ? 'px-4 py-1 border border-gray-300' : 'border border-gray-300';
+            
+            let fileCellHtml = '';
+            const mailUrl = dh.mail_url;
+            let isJsonWithFiles = false;
+            try {
+                if (mailUrl && mailUrl.startsWith('[')) {
+                    const parsed = JSON.parse(mailUrl);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        isJsonWithFiles = true;
+                    }
+                }
+            } catch (e) { /* not json */ }
+
+            if (isJsonWithFiles) {
+                fileCellHtml = `
+                    <td class="px-4 py-1 border border-gray-300 text-center group cursor-pointer" data-action="view-files" data-ma-nx="${dh.ma_nx}">
+                        <div class="flex justify-center items-center">
+                            <svg class="w-6 h-6 text-blue-500 group-hover:text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                        </div>
+                    </td>`;
+            } else if (mailUrl && (mailUrl.startsWith('http') || mailUrl.includes('@'))) {
+                fileCellHtml = `
+                    <td class="px-4 py-1 border border-gray-300 text-center">
+                        <div class="flex justify-center items-center">
+                            <a href="${mailUrl.startsWith('http') ? mailUrl : 'mailto:' + mailUrl}" target="_blank" class="text-blue-600 hover:text-blue-800" title="Mở mail/link cũ">
+                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                            </a>
+                        </div>
+                    </td>`;
+            } else {
+                 fileCellHtml = `<td class="px-4 py-1 border border-gray-300"></td>`;
+            }
+
 
             dhTableBody.innerHTML += `
                 <tr data-id="${dh.ma_nx}" class="cursor-pointer hover:bg-gray-50 ${isSelected ? 'bg-blue-100' : ''}">
-                    <td class="px-4 py-3"><input type="checkbox" class="dh-select-row" data-id="${dh.ma_nx}" ${isSelected ? 'checked' : ''}></td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td class="px-4 py-1 border border-gray-300 text-center"><input type="checkbox" class="dh-select-row" data-id="${dh.ma_nx}" ${isSelected ? 'checked' : ''}></td>
+                    <td class="px-6 py-1 whitespace-nowrap text-sm font-medium border border-gray-300 text-center">
                         <a href="#" class="view-order-link-dh text-blue-600 hover:text-blue-800 hover:underline" data-ma-nx="${dh.ma_nx}">${dh.ma_nx}</a>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(dh.thoi_gian)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${dh.loai_don === 'Nhập' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${dh.loai_don}</span></td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${dh.yeu_cau}</td>
-                    <td class="px-6 py-4 text-sm text-gray-500 break-words" title="${dh.muc_dich || ''}">${dh.muc_dich || ''}</td>
-                    <td class="px-6 py-4 text-sm text-gray-500 break-words" title="${dh.ghi_chu || ''}">${dh.ghi_chu || ''}</td>
-                    <td class="px-6 py-4 text-center">${imageYcHtml}</td>
-                    <td class="px-6 py-4 text-center">${mailHtml}</td>
+                    <td class="px-6 py-1 whitespace-nowrap text-sm text-gray-500 border border-gray-300 text-center">${formatDate(dh.thoi_gian)}</td>
+                    <td class="px-6 py-1 whitespace-nowrap border border-gray-300 text-center"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${dh.loai_don === 'Nhập' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${dh.loai_don}</span></td>
+                    <td class="px-6 py-1 whitespace-nowrap text-sm text-gray-500 border border-gray-300 text-center">${dh.yeu_cau}</td>
+                    <td class="px-6 py-1 text-sm text-gray-500 break-words border border-gray-300" title="${dh.muc_dich || ''}">${dh.muc_dich || ''}</td>
+                    <td class="px-6 py-1 text-sm text-gray-500 break-words border border-gray-300" title="${dh.ghi_chu || ''}">${dh.ghi_chu || ''}</td>
+                    <td class="${imageCellClass}">${imageCellContent}</td>
+                    ${fileCellHtml}
                 </tr>
             `;
         });
@@ -108,6 +182,29 @@ function updateDonHangActionButtonsState() {
 }
 
 async function handleDonHangSelection(e) {
+    const fileCell = e.target.closest('td[data-action="view-files"]');
+    if (fileCell) {
+        e.preventDefault();
+        const ma_nx = fileCell.dataset.maNx;
+        if (ma_nx) {
+            showLoading(true);
+            try {
+                const { data, error } = await sb.from('don_hang').select('*').eq('ma_nx', ma_nx).single();
+                if (error) throw error;
+                if (data) {
+                    openDonHangModal(data, true);
+                } else {
+                    showToast(`Không tìm thấy đơn hàng: ${ma_nx}`, 'error');
+                }
+            } catch (error) {
+                showToast('Lỗi tải chi tiết đơn hàng.', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+        return; 
+    }
+    
     const viewLink = e.target.closest('a.view-order-link-dh');
     if (viewLink) {
         e.preventDefault();
@@ -161,21 +258,48 @@ async function handleDeleteMultipleDonHang() {
     const selectedIds = [...viewStates['view-don-hang'].selected];
     if (selectedIds.length === 0) return;
 
-    const confirmed = await showConfirm(`Bạn có chắc chắn muốn xóa ${selectedIds.length} đơn hàng đã chọn? Thao tác này sẽ xóa toàn bộ chi tiết liên quan.`);
+    const confirmed = await showConfirm(`Bạn có chắc chắn muốn xóa ${selectedIds.length} đơn hàng đã chọn? Thao tác này sẽ xóa toàn bộ chi tiết và tệp đính kèm liên quan.`);
     if (!confirmed) return;
     
     showLoading(true);
     try {
+        // Delete associated files from storage
+        for (const ma_nx of selectedIds) {
+            const { data: files, error: listError } = await sb.storage.from(FILE_BUCKET).list(`order-files/${ma_nx}`);
+            if (listError) console.error(`Lỗi khi liệt kê tệp cho ${ma_nx}:`, listError);
+
+            if (files && files.length > 0) {
+                const pathsToRemove = files.map(file => `order-files/${ma_nx}/${file.name}`);
+                const { error: removeError } = await sb.storage.from(FILE_BUCKET).remove(pathsToRemove);
+                if (removeError) console.error(`Lỗi khi xóa tệp cho ${ma_nx}:`, removeError);
+            }
+        }
+
         const { data: ordersToDelete, error: selectError } = await sb.from('don_hang').select('anh_yc_url').in('ma_nx', selectedIds);
         if (selectError) throw selectError;
         
-        const filesToRemove = ordersToDelete
-            .map(p => p.anh_yc_url)
-            .filter(Boolean)
-            .map(url => `public/${url.split('/').pop()}`);
-            
-        if (filesToRemove.length > 0) {
-            await sb.storage.from('anh_yeu_cau').remove(filesToRemove);
+        const urlsToDelete = ordersToDelete.map(p => p.anh_yc_url).filter(Boolean);
+        const filesByBucket = {};
+
+        urlsToDelete.forEach(url => {
+            try {
+                const urlObj = new URL(url);
+                const pathParts = urlObj.pathname.split('/');
+                const bucketName = pathParts[5];
+                const filePath = pathParts.slice(6).join('/');
+                if (!bucketName || !filePath) return;
+
+                if (!filesByBucket[bucketName]) {
+                    filesByBucket[bucketName] = [];
+                }
+                filesByBucket[bucketName].push(filePath);
+            } catch (e) {
+                console.error("Could not parse URL for deletion:", url, e);
+            }
+        });
+        for (const bucketName in filesByBucket) {
+             const { error: removeError } = await sb.storage.from(bucketName).remove(filesByBucket[bucketName]);
+             if (removeError) console.error(`Failed to remove files from bucket ${bucketName}:`, removeError);
         }
 
         const { error: deleteChiTietError } = await sb.from('chi_tiet').delete().in('ma_nx', selectedIds);
@@ -190,20 +314,6 @@ async function handleDeleteMultipleDonHang() {
     } finally {
         showLoading(false);
     }
-}
-
-function sanitizeFileName(fileName) {
-    const lastDot = fileName.lastIndexOf('.');
-    const nameWithoutExt = fileName.slice(0, lastDot);
-    const ext = fileName.slice(lastDot);
-
-    return nameWithoutExt
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-]/g, '') +
-        ext;
 }
 
 function updateAllProductSelectsInModal() {
@@ -236,8 +346,13 @@ function updateDonHangItemInfo(row) {
     const isEdit = !!document.getElementById('don-hang-edit-mode-ma-nx').value;
 
     const sp = cache.sanPhamList.find(p => p.ma_sp === maSp);
-    if (!sp) {
+
+    infoDiv.classList.remove('text-green-600', 'text-red-600', 'text-gray-600');
+
+    if (!sp || !loaiDon) {
         infoDiv.textContent = 'Tồn kho: --';
+        infoDiv.classList.add('text-gray-600');
+        validateDonHangModal();
         return;
     }
 
@@ -246,25 +361,35 @@ function updateDonHangItemInfo(row) {
     if (isEdit) {
         const originalItem = currentEditingOrderItems.find(item => item.ma_sp === maSp);
         if (originalItem) {
-            if (loaiDon === 'Nhập') {
-                tonKhoHienTai -= originalItem.so_luong;
-            } else {
-                tonKhoHienTai += originalItem.so_luong;
-            }
+            tonKhoHienTai += (originalItem.loai === 'Nhập' ? -originalItem.so_luong : originalItem.so_luong);
         }
     }
     
     let infoText = `Tồn kho: ${tonKhoHienTai}`;
+    let isValid = true;
+
     if (soLuong > 0) {
         if (loaiDon === 'Nhập') {
             infoText += ` | Sau nhập: ${tonKhoHienTai + soLuong}`;
-        } else {
+        } else { // Xuất
             const conLai = tonKhoHienTai - soLuong;
-            infoText += ` | Sau xuất: <span class="${conLai < 0 ? 'text-red-600 font-bold' : ''}">${conLai}</span>`;
+            infoText += ` | Sau xuất: ${conLai}`;
+            if (conLai < 0) {
+                isValid = false;
+            }
         }
     }
+    
     infoDiv.innerHTML = infoText;
+
+    if (soLuong > 0 && loaiDon) {
+        infoDiv.classList.add(isValid ? 'text-green-600' : 'text-red-600');
+    } else {
+         infoDiv.classList.add('text-gray-600');
+    }
+    validateDonHangModal();
 }
+
 
 function closeActiveProductDropdown() {
     if(activeProductDropdown) {
@@ -286,12 +411,15 @@ export async function openDonHangModal(dh = null, readOnly = false) {
         ? `Chi Tiết Đơn Hàng: ${dh.ma_nx}` 
         : (isEdit ? `Sửa Đơn Hàng: ${dh.ma_nx}` : 'Tạo Đơn Hàng Mới');
     document.getElementById('don-hang-modal-title').textContent = title;
-    document.getElementById('don-hang-edit-mode-ma-nx').value = isEdit ? dh.ma_nx : '';
+    
+    const ma_nx_val = isEdit ? dh.ma_nx : '';
+    document.getElementById('don-hang-edit-mode-ma-nx').value = ma_nx_val;
+
     document.getElementById('add-dh-item-btn').classList.toggle('hidden', readOnly);
     document.getElementById('save-dh-btn').classList.toggle('hidden', readOnly);
 
     const yeuCauSelect = document.getElementById('dh-yeu-cau');
-    yeuCauSelect.innerHTML = '';
+    yeuCauSelect.innerHTML = '<option value="" disabled selected>-- Chọn người yêu cầu --</option>';
     cache.phuTrachList.forEach(name => yeuCauSelect.add(new Option(name, name)));
 
     const loaiDonSelect = document.getElementById('dh-loai-don-modal');
@@ -308,7 +436,6 @@ export async function openDonHangModal(dh = null, readOnly = false) {
         maNxInput.value = dh.ma_nx;
         document.getElementById('dh-muc-dich').value = dh.muc_dich || '';
         document.getElementById('dh-ghi-chu').value = dh.ghi_chu || '';
-        document.getElementById('dh-mail-url').value = dh.mail_url || '';
         currentImageUrlInput.value = dh.anh_yc_url || '';
         imagePreview.src = dh.anh_yc_url || PLACEHOLDER_IMAGE_URL;
 
@@ -330,16 +457,20 @@ export async function openDonHangModal(dh = null, readOnly = false) {
 
     } else {
         document.getElementById('dh-thoi-gian').valueAsDate = new Date();
+        loaiDonSelect.value = '';
+        yeuCauSelect.value = '';
         const generateMaNX = () => {
             const prefix = loaiDonSelect.value === 'Nhập' ? 'IN' : 'OUT';
             maNxInput.value = `${prefix}.JNJ.${Math.floor(100000 + Math.random() * 900000)}`;
         };
-        generateMaNX();
         loaiDonSelect.onchange = generateMaNX;
+        generateMaNX();
         addDonHangItemRow();
         currentImageUrlInput.value = '';
         imagePreview.src = PLACEHOLDER_IMAGE_URL;
     }
+
+    loadAndRenderFiles(maNxInput.value, readOnly);
 
     removeImageBtn.classList.toggle('hidden', !currentImageUrlInput.value && !selectedYcImageFile);
     
@@ -351,28 +482,29 @@ export async function openDonHangModal(dh = null, readOnly = false) {
     });
     
     modal.classList.remove('hidden');
+    validateDonHangModal();
 }
 
 function addDonHangItemRow(item = null) {
     const itemList = document.getElementById('dh-item-list');
     const row = document.createElement('div');
-    row.className = 'grid grid-cols-10 gap-4 items-start dh-item-row';
+    row.className = 'grid grid-cols-10 gap-x-4 gap-y-0 items-start dh-item-row';
     row.innerHTML = `
         <div class="col-span-3 relative">
-            <input type="text" class="dh-item-sp-search w-full border rounded-md p-2" placeholder="Tìm Mã SP...">
+            <input type="text" class="dh-item-sp-search w-full border rounded-md p-1">
             <input type="hidden" class="dh-item-ma-sp" required>
             <div class="dh-item-sp-dropdown absolute z-20 w-full bg-white border rounded-md mt-1 max-h-48 overflow-y-auto hidden shadow-lg"></div>
         </div>
         <div class="col-span-5">
-            <input type="text" class="dh-item-ten-sp w-full border rounded-md p-2 bg-gray-100" readonly placeholder="Tên SP">
+            <input type="text" class="dh-item-ten-sp w-full border rounded-md p-1 bg-gray-100" readonly>
         </div>
         <div class="col-span-1">
-            <input type="number" min="0" class="dh-item-so-luong w-full border rounded-md p-2" required placeholder="SL">
+            <input type="number" min="0" class="dh-item-so-luong w-full border rounded-md p-1" required>
         </div>
-        <div class="col-span-1 text-right">
+        <div class="col-span-1 text-right flex items-center justify-end h-full">
             <button type="button" class="remove-dh-item-btn text-red-500 hover:text-red-700">Xóa</button>
         </div>
-        <div class="col-span-10 text-xs text-gray-600 mt-1 dh-item-info">Tồn kho: --</div>
+        <div class="col-span-10 text-xs dh-item-info">Tồn kho: --</div>
     `;
     itemList.appendChild(row);
     
@@ -382,6 +514,10 @@ function addDonHangItemRow(item = null) {
         row.querySelector('.dh-item-ma-sp').value = item.ma_sp;
         row.querySelector('.dh-item-ten-sp').value = spData ? spData.ten_sp : 'Không rõ';
         row.querySelector('.dh-item-so-luong').value = item.so_luong;
+    } else {
+        row.querySelector('.dh-item-sp-search').placeholder = 'Tìm Mã SP...';
+        row.querySelector('.dh-item-ten-sp').placeholder = 'Tên SP';
+        row.querySelector('.dh-item-so-luong').placeholder = 'SL';
     }
     
     updateDonHangItemInfo(row);
@@ -401,8 +537,20 @@ async function handleSaveDonHang(e) {
         ma_nx: document.getElementById('dh-ma-nx').value,
         muc_dich: document.getElementById('dh-muc-dich').value,
         ghi_chu: document.getElementById('dh-ghi-chu').value,
-        mail_url: document.getElementById('dh-mail-url').value.trim(),
     };
+    
+    const fileListDiv = document.getElementById('dh-file-list');
+    const fileElements = fileListDiv.querySelectorAll('a[data-size]');
+    let mailUrlValue = null;
+    if (fileElements.length > 0) {
+        const fileDetails = Array.from(fileElements).map(el => ({
+            name: el.title,
+            size: parseInt(el.dataset.size, 10)
+        }));
+        mailUrlValue = JSON.stringify(fileDetails);
+    }
+    donHangData.mail_url = mailUrlValue;
+
 
     const chiTietDataList = [];
     const itemRows = document.querySelectorAll('.dh-item-row');
@@ -430,7 +578,7 @@ async function handleSaveDonHang(e) {
         if (isEdit) {
              const originalItem = currentEditingOrderItems.find(item => item.ma_sp === ma_sp);
              if (originalItem) {
-                tonKhoTruocGiaoDich += (donHangData.loai_don === 'Nhập' ? -originalItem.so_luong : originalItem.so_luong);
+                tonKhoTruocGiaoDich += (originalItem.loai === 'Nhập' ? -originalItem.so_luong : originalItem.so_luong);
              }
         }
 
@@ -456,22 +604,29 @@ async function handleSaveDonHang(e) {
     try {
         if (selectedYcImageFile) {
             const safeFileName = sanitizeFileName(selectedYcImageFile.name);
-            const filePath = `public/${Date.now()}-${safeFileName}`;
+            const filePath = `order-request-images/${Date.now()}-${safeFileName}`;
 
-            const { error: uploadError } = await sb.storage.from('anh_yeu_cau').upload(filePath, selectedYcImageFile);
+            const { error: uploadError } = await sb.storage.from('hinh_anh_san_pham').upload(filePath, selectedYcImageFile);
             if (uploadError) throw new Error(`Lỗi tải ảnh YC: ${uploadError.message}`);
 
-            const { data: urlData } = sb.storage.from('anh_yeu_cau').getPublicUrl(filePath);
+            const { data: urlData } = sb.storage.from('hinh_anh_san_pham').getPublicUrl(filePath);
             anh_yc_url = urlData.publicUrl;
-
-            if (isEdit && old_anh_yc_url) {
-                const oldFileName = old_anh_yc_url.split('/').pop();
-                await sb.storage.from('anh_yeu_cau').remove([`public/${oldFileName}`]);
-            }
-        } else if (!anh_yc_url && old_anh_yc_url) {
-            const oldFileName = old_anh_yc_url.split('/').pop();
-            await sb.storage.from('anh_yeu_cau').remove([`public/${oldFileName}`]);
         }
+        
+        if ((selectedYcImageFile || !anh_yc_url) && old_anh_yc_url) {
+            try {
+                const url = new URL(old_anh_yc_url);
+                const pathParts = url.pathname.split('/');
+                const bucketName = pathParts[5];
+                const filePathToDelete = pathParts.slice(6).join('/');
+                if (bucketName && filePathToDelete) {
+                    await sb.storage.from(bucketName).remove([filePathToDelete]);
+                }
+            } catch (e) {
+                console.error("Could not parse or delete old request image:", e);
+            }
+        }
+        
         donHangData.anh_yc_url = anh_yc_url;
 
         if (isEdit) {
@@ -504,7 +659,98 @@ async function handleSaveDonHang(e) {
     }
 }
 
+async function loadAndRenderFiles(ma_nx, readOnly = false) {
+    const fileListDiv = document.getElementById('dh-file-list');
+    fileListDiv.innerHTML = `<p class="text-xs text-gray-500">Đang tải danh sách tệp...</p>`;
+    if (!ma_nx) {
+        fileListDiv.innerHTML = `<p class="text-xs text-gray-500">Lưu đơn hàng để đính kèm tệp.</p>`;
+        return;
+    }
+    
+    const { data: files, error } = await sb.storage.from(FILE_BUCKET).list(`order-files/${ma_nx}`, {
+        sortBy: { column: 'name', order: 'asc' },
+    });
+
+    if (error) {
+        fileListDiv.innerHTML = `<p class="text-xs text-red-500">Lỗi khi tải danh sách tệp.</p>`;
+        return;
+    }
+    if (!files || files.length === 0) {
+        fileListDiv.innerHTML = `<p class="text-xs text-gray-500">Chưa có tệp nào được đính kèm.</p>`;
+        return;
+    }
+
+    fileListDiv.innerHTML = '';
+    files.forEach(file => {
+        const filePath = `order-files/${ma_nx}/${file.name}`;
+        const { data: { publicUrl } } = sb.storage.from(FILE_BUCKET).getPublicUrl(filePath);
+        const fileDiv = document.createElement('div');
+        fileDiv.className = 'flex items-center justify-between bg-gray-100 p-2 rounded-md';
+        fileDiv.innerHTML = `
+            <a href="${publicUrl}" target="_blank" title="${file.name}" data-size="${file.metadata.size}" class="text-sm text-blue-600 hover:underline truncate flex-grow mr-4">
+                ${file.name}
+            </a>
+            <div class="flex items-center flex-shrink-0">
+                <span class="text-xs text-gray-500 mr-4">${bytesToSize(file.metadata.size)}</span>
+                ${!readOnly ? `<button type="button" class="delete-file-btn text-red-500 hover:text-red-700" data-path="${filePath}">Xóa</button>` : ''}
+            </div>
+        `;
+        fileListDiv.appendChild(fileDiv);
+    });
+}
+
+async function handleFileUploads(files, ma_nx) {
+    if (!ma_nx) {
+        showToast('Vui lòng lưu đơn hàng trước khi đính kèm tệp.', 'error');
+        return;
+    }
+    
+    showLoading(true);
+    let hasError = false;
+    let stopUploads = false;
+    
+    for (const file of files) {
+        if (stopUploads) break;
+        const path = `order-files/${ma_nx}/${sanitizeFileName(file.name)}`;
+        
+        const { error } = await sb.storage.from(FILE_BUCKET).upload(path, file);
+        if (error) {
+            console.error(`Lỗi tải lên tệp: ${file.name}`, error);
+            if (error.message && error.message.toLowerCase().includes('bucket not found')) {
+                showToast(`Lỗi Cấu Hình: Không tìm thấy nơi lưu trữ tệp (${FILE_BUCKET}). Vui lòng liên hệ quản trị viên.`, 'error');
+                stopUploads = true; // Stop subsequent uploads
+            }
+            hasError = true;
+        }
+    }
+    
+    showLoading(false);
+    if (!stopUploads) {
+        showToast(hasError ? 'Một vài tệp tải lên bị lỗi.' : 'Tải lên tệp thành công!', hasError ? 'error' : 'success');
+    }
+    await loadAndRenderFiles(ma_nx);
+}
+
+async function handleFileDelete(filePath, ma_nx) {
+    const confirmed = await showConfirm('Bạn có chắc muốn xóa tệp này?');
+    if (!confirmed) return;
+
+    showLoading(true);
+    const { error } = await sb.storage.from(FILE_BUCKET).remove([filePath]);
+    showLoading(false);
+
+    if (error) {
+        showToast('Xóa tệp thất bại.', 'error');
+    } else {
+        showToast('Đã xóa tệp.', 'success');
+        await loadAndRenderFiles(ma_nx);
+    }
+}
+
 export function initDonHangView() {
+    document.getElementById('don-hang-form').addEventListener('input', validateDonHangModal);
+    document.getElementById('don-hang-form').addEventListener('change', validateDonHangModal);
+
     document.getElementById('dh-search').addEventListener('input', debounce(() => {
         viewStates['view-don-hang'].searchTerm = document.getElementById('dh-search').value;
         fetchDonHang(1);
@@ -560,7 +806,10 @@ export function initDonHangView() {
 
     document.getElementById('don-hang-form').addEventListener('submit', handleSaveDonHang);
     document.getElementById('cancel-dh-btn').addEventListener('click', () => document.getElementById('don-hang-modal').classList.add('hidden'));
-    document.getElementById('add-dh-item-btn').addEventListener('click', () => addDonHangItemRow());
+    document.getElementById('add-dh-item-btn').addEventListener('click', () => {
+        addDonHangItemRow();
+        validateDonHangModal();
+    });
     
     const processYcImageFile = (file) => {
         if (file && file.type.startsWith('image/')) {
@@ -599,6 +848,7 @@ export function initDonHangView() {
     });
 
     document.getElementById('dh-yeu-cau').addEventListener('change', updateAllProductSelectsInModal);
+    
     document.getElementById('dh-loai-don-modal').addEventListener('change', () => {
         document.querySelectorAll('.dh-item-row').forEach(row => updateDonHangItemInfo(row));
     });
@@ -609,6 +859,7 @@ export function initDonHangView() {
         if (e.target.classList.contains('remove-dh-item-btn')) {
             if (document.querySelectorAll('.dh-item-row').length > 1) {
                 e.target.closest('.dh-item-row').remove();
+                validateDonHangModal();
             } else {
                 showToast("Phải có ít nhất một sản phẩm.", 'info');
             }
@@ -673,6 +924,47 @@ export function initDonHangView() {
     });
     document.getElementById('dh-prev-page').addEventListener('click', () => fetchDonHang(viewStates['view-don-hang'].currentPage - 1));
     document.getElementById('dh-next-page').addEventListener('click', () => fetchDonHang(viewStates['view-don-hang'].currentPage + 1));
+    
+    // File upload event listeners
+    const dropZone = document.getElementById('dh-file-drop-zone');
+    if (dropZone) {
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-blue-500');
+        });
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-500');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-500');
+            if (e.dataTransfer.files) {
+                handleFileUploads(e.dataTransfer.files, document.getElementById('dh-ma-nx').value);
+            }
+        });
+        dropZone.addEventListener('paste', (e) => {
+            e.preventDefault();
+            if (e.clipboardData.files.length > 0) {
+                 handleFileUploads(e.clipboardData.files, document.getElementById('dh-ma-nx').value);
+            } else {
+                showToast('Không tìm thấy tệp trong clipboard.', 'info');
+            }
+        });
+    }
+
+    document.getElementById('dh-file-upload').addEventListener('change', (e) => {
+        handleFileUploads(e.target.files, document.getElementById('dh-ma-nx').value);
+    });
+
+    document.getElementById('dh-file-list').addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.delete-file-btn');
+        if (deleteBtn) {
+            const filePath = deleteBtn.dataset.path;
+            const ma_nx = document.getElementById('dh-ma-nx').value;
+            handleFileDelete(filePath, ma_nx);
+        }
+    });
 
     document.body.addEventListener('click', e => {
         if (activeProductDropdown && !activeProductDropdown.closest('.relative').contains(e.target)) {

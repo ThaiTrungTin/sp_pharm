@@ -1,50 +1,52 @@
 <div id="view-san-pham" class="app-view flex flex-col h-full">
     <div class="flex-shrink-0">
         <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4">Quản Lý Sản Phẩm</h1>
-        <div class="bg-white p-4 rounded-lg shadow-md mb-4 space-y-4">
-            <div class="flex flex-wrap gap-4 items-center">
-                <input type="text" id="sp-search" placeholder="Tìm kiếm chung..." class="flex-grow px-3 py-2 border rounded-md" style="min-width: 200px;">
-                <div class="relative">
-                    <button id="sp-filter-ma-sp-btn" data-filter-key="ma_sp" class="filter-btn w-full text-left px-3 py-2 border rounded-md bg-white">-- Mã SP --</button>
+        <div class="bg-white p-4 rounded-lg shadow-md mb-4">
+            <div class="flex flex-wrap gap-x-4 gap-y-2 items-center justify-between">
+                <div class="flex flex-wrap gap-2 items-center">
+                    <input type="text" id="sp-search" placeholder="Tìm kiếm chung..." class="px-3 py-2 border rounded-md w-48">
+                    <div class="relative">
+                        <button id="sp-filter-ma-sp-btn" data-filter-key="ma_sp" class="filter-btn text-left px-3 py-2 border rounded-md bg-white">-- Mã SP --</button>
+                    </div>
+                    <div class="relative">
+                        <button id="sp-filter-ten-sp-btn" data-filter-key="ten_sp" class="filter-btn text-left px-3 py-2 border rounded-md bg-white">-- Tên SP --</button>
+                    </div>
+                    <div class="relative">
+                        <button id="sp-filter-phu-trach-btn" data-filter-key="phu_trach" class="filter-btn text-left px-3 py-2 border rounded-md bg-white">-- Phụ Trách --</button>
+                    </div>
+                    <select id="sp-filter-ton-kho" class="px-3 py-2 border rounded-md bg-white">
+                        <option value="">-- Tồn Kho --</option>
+                        <option value="con_hang">Còn Hàng</option>
+                        <option value="het_hang">Hết Hàng</option>
+                    </select>
                 </div>
-                <div class="relative">
-                    <button id="sp-filter-ten-sp-btn" data-filter-key="ten_sp" class="filter-btn w-full text-left px-3 py-2 border rounded-md bg-white">-- Tên SP --</button>
+                <div class="flex flex-wrap gap-2 items-center">
+                    <button id="sp-reset-filters" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md">Xóa Lọc</button>
+                    <button id="sp-btn-add" class="admin-only bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">+ Thêm</button>
+                    <button id="sp-btn-edit" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-md" disabled>Sửa</button>
+                    <button id="sp-btn-delete" class="admin-only bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md" disabled>Xóa</button>
+                    <button id="sp-btn-excel" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">Excel</button>
+                    <button id="sp-btn-pdf" class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded-md">PDF</button>
                 </div>
-                <div class="relative">
-                    <button id="sp-filter-phu-trach-btn" data-filter-key="phu_trach" class="filter-btn w-full text-left px-3 py-2 border rounded-md bg-white">-- Phụ Trách --</button>
-                </div>
-                <select id="sp-filter-ton-kho" class="px-3 py-2 border rounded-md">
-                    <option value="">-- Tồn Kho --</option>
-                    <option value="con_hang">Còn Hàng</option>
-                    <option value="het_hang">Hết Hàng</option>
-                </select>
-                <button id="sp-reset-filters" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md">Xóa Lọc</button>
-            </div>
-            <div class="flex gap-2 flex-wrap border-t pt-4">
-                <button id="sp-btn-add" class="admin-only bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">+ Thêm</button>
-                <button id="sp-btn-edit" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-md" disabled>Sửa</button>
-                <button id="sp-btn-delete" class="admin-only bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md" disabled>Xóa</button>
-                <button id="sp-btn-excel" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">Excel</button>
-                <button id="sp-btn-pdf" class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded-md">PDF</button>
             </div>
         </div>
     </div>
 
     <div class="flex-grow bg-white rounded-lg shadow-md overflow-hidden">
         <div class="table-container">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50"><tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 5%;"><input type="checkbox" id="sp-select-all"></th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 10%;">Hình Ảnh</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 15%;">Mã SP</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 25%;">Tên SP</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 8%;">Tồn Đầu</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 8%;">Nhập</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 8%;">Xuất</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 8%;">Tồn Cuối</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 13%;">Phụ Trách</th>
+            <table class="min-w-full border-collapse">
+                <thead class="bg-gray-200"><tr>
+                    <th class="px-4 py-2 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 3%;"><input type="checkbox" id="sp-select-all"></th>
+                    <th class="px-4 py-2 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 7%;">Hình Ảnh</th>
+                    <th class="px-6 py-2 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 15%;">Mã SP</th>
+                    <th class="px-6 py-2 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 30%;">Tên SP</th>
+                    <th class="px-6 py-2 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 8%;">Tồn Đầu</th>
+                    <th class="px-6 py-2 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 8%;">Nhập</th>
+                    <th class="px-6 py-2 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 8%;">Xuất</th>
+                    <th class="px-6 py-2 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 8%;">Tồn Cuối</th>
+                    <th class="px-6 py-2 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 13%;">Phụ Trách</th>
                 </tr></thead>
-                <tbody id="sp-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+                <tbody id="sp-table-body" class="bg-white"></tbody>
             </table>
         </div>
     </div>

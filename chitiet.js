@@ -94,18 +94,18 @@ function renderChiTietTable(data) {
         data.forEach(ct => {
             ctTableBody.innerHTML += `
                 <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td class="px-6 py-2 whitespace-nowrap text-sm font-medium border border-gray-300 text-center">
                         <a href="#" class="view-order-link text-blue-600 hover:text-blue-800 hover:underline" data-ma-nx="${ct.ma_nx}">${ct.ma_nx}</a>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(ct.thoi_gian)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${ct.loai === 'Nhập' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${ct.loai}</span></td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td class="px-6 py-2 whitespace-nowrap text-sm text-gray-500 border border-gray-300 text-center">${formatDate(ct.thoi_gian)}</td>
+                    <td class="px-6 py-2 whitespace-nowrap border border-gray-300 text-center"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${ct.loai === 'Nhập' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${ct.loai}</span></td>
+                    <td class="px-6 py-2 whitespace-nowrap text-sm text-gray-500 border border-gray-300">
                         <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline" data-action="view-product" data-ma-sp="${ct.ma_sp}">${ct.ma_sp}</a>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-500 break-words">${ct.ten_sp || ''}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-700">${ct.so_luong}</td>
-                    <td class="px-6 py-4 text-sm text-gray-500 break-words">${ct.muc_dich || ''}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td class="px-6 py-2 text-sm text-gray-500 break-words border border-gray-300">${ct.ten_sp || ''}</td>
+                    <td class="px-6 py-2 whitespace-nowrap text-sm font-bold border border-gray-300 text-center ${ct.loai === 'Nhập' ? 'text-green-600' : 'text-red-600'}">${ct.so_luong}</td>
+                    <td class="px-6 py-2 text-sm text-gray-500 break-words border border-gray-300">${ct.muc_dich || ''}</td>
+                    <td class="px-6 py-2 whitespace-nowrap text-sm text-gray-500 border border-gray-300 text-center">
                          ${ct.phu_trach ? `<a href="#" class="text-blue-600 hover:text-blue-800 hover:underline" data-action="view-by-phu-trach" data-phu-trach="${ct.phu_trach}">${ct.phu_trach}</a>` : ''}
                     </td>
                 </tr>

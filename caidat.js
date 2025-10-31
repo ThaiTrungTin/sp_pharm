@@ -1,20 +1,6 @@
-import { sb, cache, currentUser, showLoading, showToast, showConfirm, DEFAULT_AVATAR_URL, updateSidebarAvatar } from './app.js';
+import { sb, cache, currentUser, showLoading, showToast, showConfirm, DEFAULT_AVATAR_URL, updateSidebarAvatar, sanitizeFileName } from './app.js';
 
 let selectedAvatarFile = null;
-
-function sanitizeFileName(fileName) {
-    const lastDot = fileName.lastIndexOf('.');
-    const nameWithoutExt = fileName.slice(0, lastDot);
-    const ext = fileName.slice(lastDot);
-
-    return nameWithoutExt
-        .normalize('NFD') 
-        .replace(/[\u0300-\u036f]/g, '') 
-        .toLowerCase() 
-        .replace(/\s+/g, '-') 
-        .replace(/[^a-z0-9-]/g, '') + 
-        ext; 
-}
 
 async function handleProfileUpdate(e) {
     e.preventDefault();

@@ -73,15 +73,15 @@ function renderSanPhamTable(data) {
 
             spTableBody.innerHTML += `
                 <tr data-id="${sp.ma_sp}" class="cursor-pointer hover:bg-gray-50 ${isSelected ? 'bg-blue-100' : ''}">
-                    <td class="px-4 py-3"><input type="checkbox" class="sp-select-row" data-id="${sp.ma_sp}" ${isSelected ? 'checked' : ''}></td>
-                    <td class="px-4 py-3">${imageHtml}</td>
-                    <td class="px-6 py-3 text-sm font-medium text-gray-900">${sp.ma_sp}</td>
-                    <td class="px-6 py-3 text-sm text-gray-600 break-words">${sp.ten_sp}</td>
-                    <td class="px-6 py-3 text-sm text-gray-600">${sp.ton_dau}</td>
-                    <td class="px-6 py-3 text-sm text-gray-600">${sp.nhap}</td>
-                    <td class="px-6 py-3 text-sm text-gray-600">${sp.xuat}</td>
-                    <td class="px-6 py-3 text-sm font-semibold ${sp.ton_cuoi > 0 ? 'text-green-600' : 'text-red-600'}">${sp.ton_cuoi}</td>
-                    <td class="px-6 py-3 text-sm text-gray-600">${sp.phu_trach || ''}</td>
+                    <td class="px-4 py-1 border border-gray-300 text-center"><input type="checkbox" class="sp-select-row" data-id="${sp.ma_sp}" ${isSelected ? 'checked' : ''}></td>
+                    <td class="px-4 py-1 border border-gray-300 flex justify-center items-center">${imageHtml}</td>
+                    <td class="px-6 py-1 text-sm font-medium text-gray-900 border border-gray-300">${sp.ma_sp}</td>
+                    <td class="px-6 py-1 text-sm text-gray-600 break-words border border-gray-300">${sp.ten_sp}</td>
+                    <td class="px-6 py-1 text-sm font-bold text-gray-900 border border-gray-300 text-center">${sp.ton_dau}</td>
+                    <td class="px-6 py-1 text-sm font-bold text-green-600 border border-gray-300 text-center">${sp.nhap}</td>
+                    <td class="px-6 py-1 text-sm font-bold text-red-600 border border-gray-300 text-center">${sp.xuat}</td>
+                    <td class="px-6 py-1 text-sm font-bold ${sp.ton_cuoi > 0 ? 'text-green-600' : 'text-red-600'} border border-gray-300 text-center">${sp.ton_cuoi}</td>
+                    <td class="px-6 py-1 text-sm text-gray-600 border border-gray-300 text-center">${sp.phu_trach || ''}</td>
                 </tr>
             `;
         });

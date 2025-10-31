@@ -16,13 +16,13 @@
 
             <div class="space-y-4 mb-4 border-b pb-4 flex-shrink-0">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div><label for="dh-thoi-gian" class="block text-sm font-medium text-gray-700">Thời Gian</label><input type="date" id="dh-thoi-gian" required class="mt-1 block w-full border rounded-md p-2"></div>
-                    <div><label for="dh-loai-don-modal" class="block text-sm font-medium text-gray-700">Loại Đơn</label><select id="dh-loai-don-modal" required class="mt-1 block w-full border rounded-md p-2"><option value="Nhập">Nhập</option><option value="Xuất">Xuất</option></select></div>
-                    <div><label for="dh-ma-nx" class="block text-sm font-medium text-gray-700">Mã Nhập Xuất</label><input type="text" id="dh-ma-nx" readonly class="mt-1 block w-full border rounded-md p-2 bg-gray-200"></div>
-                    <div><label for="dh-yeu-cau" class="block text-sm font-medium text-gray-700">Yêu Cầu</label><select id="dh-yeu-cau" required class="mt-1 block w-full border rounded-md p-2"></select></div>
+                    <div><label for="dh-thoi-gian" class="block text-sm font-medium text-gray-700">Thời Gian <span class="text-red-500">*</span></label><input type="date" id="dh-thoi-gian" required class="mt-1 block w-full border rounded-md p-2"></div>
+                    <div><label for="dh-loai-don-modal" class="block text-sm font-medium text-gray-700">Loại Đơn <span class="text-red-500">*</span></label><select id="dh-loai-don-modal" required class="mt-1 block w-full border rounded-md p-2"><option value="" selected disabled>-- Chọn loại --</option><option value="Nhập">Nhập</option><option value="Xuất">Xuất</option></select></div>
+                    <div><label for="dh-ma-nx" class="block text-sm font-medium text-gray-700">Mã Nhập Xuất <span class="text-red-500">*</span></label><input type="text" id="dh-ma-nx" readonly class="mt-1 block w-full border rounded-md p-2 bg-gray-200"></div>
+                    <div><label for="dh-yeu-cau" class="block text-sm font-medium text-gray-700">Yêu Cầu <span class="text-red-500">*</span></label><select id="dh-yeu-cau" required class="mt-1 block w-full border rounded-md p-2"><option value="" disabled selected>-- Chọn người yêu cầu --</option></select></div>
                 </div>
                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label for="dh-muc-dich" class="block text-sm font-medium text-gray-700">Mục Đích</label><textarea id="dh-muc-dich" rows="1" class="mt-1 block w-full border rounded-md p-2"></textarea></div>
+                    <div><label for="dh-muc-dich" class="block text-sm font-medium text-gray-700">Mục Đích <span class="text-red-500">*</span></label><textarea id="dh-muc-dich" rows="1" required class="mt-1 block w-full border rounded-md p-2"></textarea></div>
                     <div><label for="dh-ghi-chu" class="block text-sm font-medium text-gray-700">Ghi Chú</label><textarea id="dh-ghi-chu" rows="1" class="mt-1 block w-full border rounded-md p-2"></textarea></div>
                 </div>
                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
@@ -43,13 +43,21 @@
                         </div>
                     </div>
                     <div>
-                        <label for="dh-mail-url" class="block text-sm font-medium text-gray-700">Link Mail Outlook</label>
-                        <input type="text" id="dh-mail-url" placeholder="Dán link mail vào đây..." class="mt-1 block w-full border rounded-md p-2">
+                        <label class="block text-sm font-medium text-gray-700">Tệp đính kèm</label>
+                        <div id="dh-file-drop-zone" tabindex="0" class="mt-1 flex items-center justify-between gap-4 p-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors">
+                            <p class="text-sm text-gray-500 flex-grow">Kéo thả tệp, hoặc dán vào đây</p>
+                            <label for="dh-file-upload" class="flex-shrink-0 cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500">
+                                <span>Chọn Tệp</span>
+                                <input id="dh-file-upload" name="dh-file-upload" type="file" class="sr-only" multiple>
+                            </label>
+                        </div>
+                        <div id="dh-file-list" class="mt-2 max-h-24 overflow-y-auto space-y-1">
+                        </div>
                     </div>
                 </div>
             </div>
             <h4 class="text-lg font-medium text-gray-800 mb-2 flex-shrink-0">Danh sách sản phẩm</h4>
-            <div id="dh-item-list" class="space-y-3 overflow-y-auto pr-2 flex-grow">
+            <div id="dh-item-list" class="space-y-1 overflow-y-auto pr-2 flex-grow">
             </div>
             <button type="button" id="add-dh-item-btn" class="mt-3 text-blue-600 hover:text-blue-800 text-sm font-medium self-start flex-shrink-0">+ Thêm sản phẩm</button>
             <div class="mt-6 flex justify-end space-x-3 flex-shrink-0">
