@@ -6,13 +6,9 @@
     <title>In Đơn Hàng</title>
     <link rel="icon" type="image/png" href="https://images.seeklogo.com/logo-png/50/1/johnson-johnson-logo-png_seeklogo-500414.png">
     <!-- Tải Tailwind CSS -->
-    <!-- Tải Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tải Supabase client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Thư viện xuất PDF (jsPDF & html2pdf) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <!-- Thư viện tạo mã QR -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
         body {
@@ -29,8 +25,8 @@
             }
         }
         .page-container {
-            width: 210mm; /* A4 width */
-            min-height: 297mm; /* A4 height */
+            width: 210mm;
+            min-height: 297mm;
             padding: 20mm 15mm;
             margin: 20px auto;
             background: white;
@@ -40,18 +36,14 @@
 </head>
 <body class="bg-gray-200">
 
-    <!-- Các nút hành động, sẽ bị ẩn khi in -->
     <div id="action-buttons" class="fixed top-4 left-4 z-50 flex gap-3">
         <button id="print-btn" disabled class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md disabled:opacity-50 disabled:cursor-wait">In Phiếu</button>
         <button id="pdf-btn" disabled class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded-md disabled:opacity-50 disabled:cursor-wait">Xuất PDF</button>
     </div>
 
-    <!-- Nội dung phiếu in -->
     <div id="print-content" class="page-container">
-        <!-- Header -->
         <header class="grid grid-cols-3 items-start mb-8">
             <div class="col-span-1">
-                <!-- Trống -->
             </div>
             <div class="col-span-1 text-center">
                 <h1 id="phieu-title" class="text-2xl font-bold uppercase">PHIẾU ...</h1>
@@ -59,18 +51,16 @@
             </div>
             <div class="col-span-1 flex flex-col items-end">
                 <div id="qrcode" class="w-20 h-20 mb-1"></div>
-                <p id="phieu-ma-so" class="text-sm font-semibold"> ...</p>
+                <p id="phieu-ma-so" class="text-sm font-semibold">Mã số: ...</p>
             </div>
         </header>
 
-        <!-- Thông tin chi tiết -->
         <section class="mb-6 text-sm">
             <p><strong class="font-semibold">Người yêu cầu:</strong> <span id="info-yeu-cau">...</span></p>
             <p><strong class="font-semibold">Mục đích:</strong> <span id="info-muc-dich">...</span></p>
             <p><strong class="font-semibold">Ghi chú:</strong> <span id="info-ghi-chu">...</span></p>
         </section>
 
-        <!-- Bảng sản phẩm -->
         <section class="mb-12">
             <table class="w-full border-collapse border border-gray-400 text-sm">
                 <thead>
@@ -82,7 +72,6 @@
                     </tr>
                 </thead>
                 <tbody id="product-table-body">
-                    <!-- Dữ liệu sẽ được chèn vào đây -->
                 </tbody>
                 <tfoot>
                     <tr class="font-bold">
@@ -93,7 +82,6 @@
             </table>
         </section>
 
-        <!-- Chữ ký -->
         <footer class="flex justify-between items-start pt-16 text-center text-sm">
             <div>
                 <p class="font-bold">Thủ Kho</p>
@@ -142,25 +130,21 @@
                 return;
             }
 
-            // Populate header
             document.title = `In Phiếu ${donHang.ma_nx}`;
             document.getElementById('phieu-title').textContent = `PHIẾU ${donHang.loai_don.toUpperCase()} KHO`;
             document.getElementById('phieu-ngay').textContent = `${formatDate(donHang.thoi_gian)} - Kho B4`;
-            document.getElementById('phieu-ma-so').textContent = ` ${donHang.ma_nx}`;
+            document.getElementById('phieu-ma-so').textContent = `Mã số: ${donHang.ma_nx}`;
             
-            // Generate QR Code
             new QRCode(document.getElementById("qrcode"), {
                 text: window.location.href,
                 width: 80,
                 height: 80,
             });
 
-            // Populate info
             document.getElementById('info-yeu-cau').textContent = donHang.yeu_cau || 'N/A';
             document.getElementById('info-muc-dich').textContent = donHang.muc_dich || 'N/A';
             document.getElementById('info-ghi-chu').textContent = donHang.ghi_chu || 'N/A';
 
-            // Populate table
             const tableBody = document.getElementById('product-table-body');
             tableBody.innerHTML = '';
             let total = 0;
@@ -177,15 +161,12 @@
             });
             document.getElementById('total-quantity').textContent = total;
 
-            // Kích hoạt các nút sau khi tải xong
-            // Thêm một độ trễ nhỏ để đảm bảo QR code đã được render hoàn toàn
             setTimeout(() => {
                 document.getElementById('print-btn').disabled = false;
                 document.getElementById('pdf-btn').disabled = false;
             }, 500);
         }
 
-        // Gắn sự kiện cho các nút
         document.getElementById('print-btn').addEventListener('click', () => window.print());
 
         document.getElementById('pdf-btn').addEventListener('click', () => {
@@ -201,7 +182,6 @@
             html2pdf().from(element).set(opt).save();
         });
 
-        // Tải dữ liệu khi trang được mở
         loadOrderDetails();
     </script>
 

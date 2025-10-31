@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng nhập / Đăng ký</title>
-    <!-- Tải Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tải Supabase Client --><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>Tài Khoản</title>
+    <link rel="icon" type="image/png" href="https://images.seeklogo.com/logo-png/50/1/johnson-johnson-logo-png_seeklogo-500414.png">
+    <!-- Tải Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* CSS đơn giản cho trạng thái tải */
         .loader {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #3498db;
@@ -22,16 +23,18 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 font-sans antialiased"> <!-- Đã đổi lại nền màu xám mặc định --><!-- Container chính --><div id="app" class="flex items-center justify-center min-h-screen p-4">
+<body class="bg-gray-100 font-sans antialiased">
+    <div id="app" class="flex items-center justify-center min-h-screen p-4">
 
-        <!-- Trạng thái tải ban đầu --><div id="loading-container" class="flex flex-col items-center">
+        <div id="loading-container" class="flex flex-col items-center">
             <div class="loader"></div>
-            <p class="mt-2 text-gray-600">Đang tải ứng dụng...</p> <!-- Đã đổi màu chữ lại thành xám đậm --></div>
+            <p class="mt-2 text-gray-600">Đang tải ứng dụng...</p>
+        </div>
 
-        <!-- Container Đăng nhập / Đăng ký (Ẩn ban đầu) --><div id="auth-container" class="hidden w-full max-w-md">
+        <div id="auth-container" class="hidden w-full max-w-md">
             
-            <!-- Form Đăng nhập --><form id="login-form" class="bg-white p-8 rounded-lg shadow-md">
-                <!-- THAY ĐỔI: Logo mới --><div class="flex justify-center mb-4">
+            <form id="login-form" class="bg-white p-8 rounded-lg shadow-md">
+                <div class="flex justify-center mb-4">
                     <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqynYNg47oA46x0qg7yA28QtHrT2kPgD3WTA&s" alt="Logo" class="rounded-full h-20 w-20">
                 </div>
                 <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Đăng nhập</h2>
@@ -63,8 +66,8 @@
                 </p>
             </form>
 
-            <!-- Form Đăng ký (Ẩn ban đầu) --><form id="register-form" class="hidden bg-white p-8 rounded-lg shadow-md">
-                <!-- THAY ĐỔI: Logo mới --><div class="flex justify-center mb-4">
+            <form id="register-form" class="hidden bg-white p-8 rounded-lg shadow-md">
+                <div class="flex justify-center mb-4">
                     <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqynYNg47oA46x0qg7yA28QtHrT2kPgD3WTA&s" alt="Logo" class="rounded-full h-20 w-20">
                 </div>
                 <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Đăng ký</h2>
@@ -116,18 +119,18 @@
                 </p>
             </form>
             
-            <!-- Vùng hiển thị thông báo lỗi --><div id="message-container" class="mt-4 text-center text-red-500 font-medium"></div>
+            <div id="message-container" class="mt-4 text-center text-red-500 font-medium"></div>
 
         </div>
 
-        <!-- Container Ứng dụng (Khi đã đăng nhập) --><div id="app-container" class="hidden w-full max-w-lg text-center">
+        <div id="app-container" class="hidden w-full max-w-lg text-center">
             <div class="bg-white p-8 rounded-lg shadow-md">
-                <!-- THAY ĐỔI: Logo mới --><div class="flex justify-center mb-4">
+                <div class="flex justify-center mb-4">
                     <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqynYNg47oA46x0qg7yA28QtHrT2kPgD3WTA&s" alt="Logo" class="rounded-full h-20 w-20">
                 </div>
                 <h1 class="text-3xl font-bold text-gray-800 mb-4">Chào mừng!</h1> 
                 <div id="user-info" class="text-left space-y-2 text-gray-700">
-                    <!-- Thông tin user sẽ được chèn vào đây --></div>
+                </div>
                 <button id="logout-btn" class="mt-6 w-full bg-red-500 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">
                     Đăng xuất
                 </button>
@@ -137,17 +140,13 @@
     </div>
 
     <script type="module">
-        // Import Supabase client
         const { createClient } = supabase;
 
-        // Thông tin Supabase của bạn
         const SUPABASE_URL = 'https://qnqtkknzqewesxjoudhr.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFucXRra256cWV3ZXN4am91ZGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3NTE0NzAsImV4cCI6MjA3NzMyNzQ3MH0.3FnZe-lvrI9N2rwZT7Knd5Ab_Rxi5xJ5KeIMMgKD8zQ';
         
-        // Khởi tạo client
         const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Lấy các phần tử DOM
         const loadingContainer = document.getElementById('loading-container');
         const authContainer = document.getElementById('auth-container');
         const appContainer = document.getElementById('app-container');
@@ -162,13 +161,6 @@
         const userInfoDiv = document.getElementById('user-info');
         const messageContainer = document.getElementById('message-container');
 
-        // ----- HÀM XỬ LÝ -----
-
-        /**
-         * Hiển thị thông báo (lỗi hoặc thành công)
-         * @param {string} message - Nội dung thông báo
-         * @param {boolean} isError - Là lỗi (true) hay thành công (false)
-         */
         function showMessage(message, isError = true) {
             messageContainer.textContent = message;
             messageContainer.className = isError 
@@ -176,19 +168,10 @@
                 : 'mt-4 text-center text-green-500 font-medium';
         }
 
-        /**
-         * Chuyển sang giao diện ứng dụng (đã đăng nhập)
-         * @param {object} user - Đối tượng user từ Supabase
-         */
         function showAppView(user) {
-            // SỬA ĐỔI: Thay vì hiển thị div, chúng ta chuyển hướng đến trang app chính
-            // (sessionStorage đã được lưu ở hàm login/register)
             window.location.href = 'index.html';
         }
 
-        /**
-         * Chuyển sang giao diện xác thực (chưa đăng nhập)
-         */
         function showAuthView() {
             appContainer.classList.add('hidden');
             loadingContainer.classList.add('hidden');
@@ -198,9 +181,6 @@
             authContainer.classList.remove('hidden');
         }
 
-        /**
-         * Xử lý đăng nhập
-         */
         async function handleLogin(e) {
             e.preventDefault();
             showMessage('Đang đăng nhập...', false);
@@ -208,12 +188,11 @@
             const gmail = document.getElementById('login-gmail').value;
             const mat_khau = document.getElementById('login-password').value;
 
-            // Truy vấn trực tiếp bảng 'user'
             const { data, error } = await sb
                 .from('user')
                 .select('*')
                 .eq('gmail', gmail)
-                .limit(1); // Lấy tối đa 1 bản ghi, trả về mảng
+                .limit(1);
 
             if (error) {
                 console.error('Lỗi Supabase:', error.message);
@@ -222,27 +201,19 @@
             }
 
             if (data && data.length > 0) {
-                const user = data[0]; // Lấy user đầu tiên tìm thấy
+                const user = data[0];
                 if (user.mat_khau === mat_khau) {
-                    // Đăng nhập thành công
                     showMessage('Đăng nhập thành công!', false);
-                    // Lưu thông tin vào sessionStorage (sẽ mất khi đóng tab)
-                    // Bạn có thể dùng localStorage nếu muốn lưu lâu hơn
                     sessionStorage.setItem('loggedInUser', JSON.stringify(user));
                     showAppView(user);
                 } else {
-                    // Sai mật khẩu
                     showMessage('Mật khẩu không chính xác.');
                 }
             } else {
-                // Không tìm thấy user
                 showMessage('Gmail không tồn tại.');
             }
         }
 
-        /**
-         * Xử lý đăng ký
-         */
         async function handleRegister(e) {
             e.preventDefault();
             
@@ -251,7 +222,6 @@
             const mat_khau = document.getElementById('register-password').value;
             const confirm_mat_khau = document.getElementById('register-confirm-password').value;
 
-            // Kiểm tra mật khẩu khớp
             if (mat_khau !== confirm_mat_khau) {
                 showMessage('Mật khẩu xác nhận không khớp.');
                 return;
@@ -259,19 +229,17 @@
             
             showMessage('Đang xử lý đăng ký...', false);
 
-            // 1. Kiểm tra xem gmail đã tồn tại chưa
             const { data: existingUser, error: selectError } = await sb
                 .from('user')
                 .select('gmail')
                 .eq('gmail', gmail)
-                .limit(1); // Dùng limit(1) thay vì single()
+                .limit(1);
 
             if (existingUser && existingUser.length > 0) {
                 showMessage('Gmail này đã được sử dụng.');
                 return;
             }
 
-            // 2. Nếu gmail chưa tồn tại, tạo user mới
             const { data: newUser, error: insertError } = await sb
                 .from('user')
                 .insert([
@@ -279,11 +247,11 @@
                         gmail: gmail, 
                         ho_ten: ho_ten, 
                         mat_khau: mat_khau, 
-                        phan_quyen: 'User' // Mặc định là 'User'
+                        phan_quyen: 'User'
                     }
                 ])
-                .select() // Trả về bản ghi vừa tạo
-                .single(); // Vì ta chỉ tạo 1 user
+                .select()
+                .single();
 
             if (insertError) {
                 console.error('Lỗi Supabase:', insertError.message);
@@ -292,73 +260,54 @@
             }
 
             if (newUser) {
-                // Đăng ký thành công, tự động đăng nhập
                 showMessage('Đăng ký thành công!', false);
                 sessionStorage.setItem('loggedInUser', JSON.stringify(newUser));
                 showAppView(newUser);
             }
         }
 
-        /**
-         * Xử lý đăng xuất
-         */
         function handleLogout() {
             sessionStorage.removeItem('loggedInUser');
             showMessage('Đã đăng xuất.', false);
             showAuthView();
-            // Xóa thông báo sau 1 giây
             setTimeout(() => showMessage(''), 1000);
         }
 
-        /**
-         * Kiểm tra phiên đăng nhập khi tải trang
-         */
         function checkSession() {
             try {
                 const userJson = sessionStorage.getItem('loggedInUser');
                 if (userJson) {
-                    // SỬA ĐỔI: Nếu đã đăng nhập, chuyển thẳng vào app
-                    // const user = JSON.parse(userJson);
-                    // showAppView(user);
                     window.location.href = 'index.html';
                 } else {
-                    // Nếu chưa đăng nhập, hiển thị form
                     showAuthView();
                 }
             } catch (error) {
                 console.error('Lỗi khi kiểm tra session:', error);
-                sessionStorage.clear(); // Xóa session hỏng
+                sessionStorage.clear();
                 showAuthView();
             }
         }
 
-        // ----- GẮN SỰ KIỆN -----
-
-        // Chuyển form
         showRegisterBtn.addEventListener('click', () => {
             loginForm.classList.add('hidden');
             registerForm.classList.remove('hidden');
-            showMessage(''); // Xóa thông báo
+            showMessage('');
         });
 
         showLoginBtn.addEventListener('click', () => {
             registerForm.classList.add('hidden');
             loginForm.classList.remove('hidden');
-            showMessage(''); // Xóa thông báo
+            showMessage('');
         });
 
-        // Submit form
         loginForm.addEventListener('submit', handleLogin);
         registerForm.addEventListener('submit', handleRegister);
         
-        // Đăng xuất
         logoutBtn.addEventListener('click', handleLogout);
 
-        // Chạy khi trang tải xong
         document.addEventListener('DOMContentLoaded', () => {
             checkSession();
 
-            // ----- THÊM MỚI: LOGIC NÚT ẨN/HIỆN MẬT KHẨU -----
             const passwordToggleButtons = document.querySelectorAll('.password-toggle-btn');
             
             passwordToggleButtons.forEach(button => {
@@ -383,11 +332,8 @@
                     }
                 });
             });
-            // --------------------------------------------------
         });
 
     </script>
 </body>
 </html>
-
-

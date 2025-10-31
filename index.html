@@ -5,13 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tồn Kho Pharm</title>
     <link rel="icon" type="image/png" href="https://images.seeklogo.com/logo-png/50/1/johnson-johnson-logo-png_seeklogo-500414.png">
-    <!-- Tải Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tải Supabase client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Thư viện xuất Excel (SheetJS) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-    <!-- Thư viện xuất PDF (jsPDF & jsPDF-AutoTable) -->
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.23/dist/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -19,13 +15,10 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); }
         .nav-button.active { background-color: #374151; color: #f3f4f6; }
-        /* Sticky header cho table */
         .table-container { height: 100%; overflow-y: auto; }
         thead th { position: sticky; top: 0; z-index: 10; background-color: #f9fafb; }
-        /* Button disabled style */
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         
-        /* Toast Notification Styles */
         #toast-container {
             position: fixed;
             top: 1.5rem;
@@ -52,10 +45,9 @@
         .toast-error { background-color: #dc3545; }
         .toast-info { background-color: #17a2b8; }
 
-        /* Custom Filter Popover */
         .filter-popover {
             position: absolute;
-            z-index: 40; /* Dưới modal, trên nội dung chính */
+            z-index: 40;
             background: white;
             border: 1px solid #e5e7eb;
             border-radius: 0.375rem;
@@ -77,9 +69,7 @@
 
     <div id="main-app" class="hidden">
         <div class="flex h-screen bg-gray-200">
-            <!-- Sidebar -->
             <div id="sidebar" class="fixed inset-y-0 left-0 z-30 w-64 transform transition-all duration-300 ease-in-out bg-gray-900 text-gray-200 no-scrollbar overflow-y-auto flex flex-col">
-                <!-- Header: User info and Toggle button -->
                 <div class="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
                     <div class="flex items-center">
                          <img id="sidebar-logo" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqynYNg47oA46x0qg7yA28QtHrT2kPgD3WTA&s" alt="Logo" class="rounded-full h-10 w-10 mr-3 flex-shrink-0">
@@ -94,7 +84,6 @@
                     </button>
                 </div>
 
-                <!-- Menu điều hướng -->
                 <nav class="mt-4 flex-grow">
                     <button data-view="view-san-pham" class="nav-button w-full flex items-center px-6 py-3 text-gray-400 hover:bg-gray-700 active">
                         <svg class="w-6 h-6 mr-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
@@ -114,7 +103,6 @@
                     </button>
                 </nav>
 
-                <!-- Footer Info -->
                 <div id="sidebar-footer" class="p-4 text-center text-xs text-gray-400 flex-shrink-0 transition-opacity duration-300">
                     <p class="font-semibold">Phiên bản 001</p>
                     <p>Phát triển bởi Thái Trung Tín</p>
@@ -122,17 +110,13 @@
                 </div>
             </div>
 
-            <!-- Khu vực nội dung chính -->
             <div id="main-content-area" class="flex-1 flex flex-col ml-64 transition-all duration-300 ease-in-out">
                 <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 md:p-6">
                     
-                    <!-- View 1: Sản Phẩm -->
                     <div id="view-san-pham" class="app-view flex flex-col h-full">
-                        <!-- Header and Controls (flex-shrink-0) -->
                         <div class="flex-shrink-0">
                             <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4">Quản Lý Sản Phẩm</h1>
                             <div class="bg-white p-4 rounded-lg shadow-md mb-4 space-y-4">
-                                <!-- Hàng 1: Tìm kiếm & Lọc -->
                                 <div class="flex flex-wrap gap-4 items-center">
                                     <input type="text" id="sp-search" placeholder="Tìm kiếm chung..." class="flex-grow px-3 py-2 border rounded-md" style="min-width: 200px;">
                                     <div class="relative">
@@ -151,7 +135,6 @@
                                     </select>
                                     <button id="sp-reset-filters" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md">Xóa Lọc</button>
                                 </div>
-                                <!-- Hàng 2: Actions -->
                                 <div class="flex gap-2 flex-wrap border-t pt-4">
                                     <button id="sp-btn-add" class="admin-only bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">+ Thêm</button>
                                     <button id="sp-btn-edit" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-md" disabled>Sửa</button>
@@ -162,7 +145,6 @@
                             </div>
                         </div>
 
-                        <!-- Table Area (flex-grow-1) -->
                         <div class="flex-grow bg-white rounded-lg shadow-md overflow-hidden">
                             <div class="table-container">
                                 <table class="min-w-full divide-y divide-gray-200">
@@ -182,7 +164,6 @@
                             </div>
                         </div>
 
-                         <!-- Pagination (flex-shrink-0) -->
                         <div class="flex-shrink-0 flex flex-col md:flex-row justify-between items-center mt-4 p-4 bg-white rounded-lg shadow-md">
                              <span id="sp-pagination-info" class="text-sm text-gray-600 mb-2 md:mb-0"></span>
                              <div class="flex items-center gap-2 flex-wrap">
@@ -198,12 +179,10 @@
                         </div>
                     </div>
 
-                    <!-- View 2: Đơn Hàng -->
                     <div id="view-don-hang" class="app-view hidden flex flex-col h-full">
                         <div class="flex-shrink-0">
                             <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4">Quản Lý Đơn Hàng</h1>
                             <div class="bg-white p-4 rounded-lg shadow-md mb-4 space-y-4">
-                                <!-- Hàng 1: Tìm kiếm & Lọc -->
                                 <div class="flex flex-wrap gap-4 items-center">
                                     <input type="text" id="dh-search" placeholder="Tìm kiếm chung..." class="flex-grow px-3 py-2 border rounded-md" style="min-width: 200px;">
                                     <div class="flex items-center gap-2">
@@ -227,7 +206,6 @@
                                     </select>
                                     <button id="dh-reset-filters" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md">Xóa Lọc</button>
                                 </div>
-                                <!-- Hàng 2: Actions -->
                                 <div class="flex gap-2 flex-wrap border-t pt-4">
                                     <button id="dh-btn-add" class="admin-only bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">+ Thêm</button>
                                     <button id="dh-btn-view" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md" disabled>Xem</button>
@@ -241,7 +219,6 @@
                             </div>
                         </div>
 
-                        <!-- Table Area -->
                         <div class="flex-grow bg-white rounded-lg shadow-md overflow-hidden">
                             <div class="table-container">
                                 <table class="min-w-full divide-y divide-gray-200">
@@ -263,7 +240,6 @@
                             </div>
                         </div>
 
-                        <!-- Pagination -->
                         <div class="flex-shrink-0 flex flex-col md:flex-row justify-between items-center mt-4 p-4 bg-white rounded-lg shadow-md">
                             <span id="dh-pagination-info" class="text-sm text-gray-600 mb-2 md:mb-0"></span>
                             <div class="flex items-center gap-2 flex-wrap">
@@ -279,12 +255,10 @@
                         </div>
                     </div>
 
-                    <!-- View 3: Chi Tiết -->
                     <div id="view-chi-tiet" class="app-view hidden flex flex-col h-full">
                         <div class="flex-shrink-0">
                             <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4">Chi Tiết Nhập Xuất</h1>
                             <div class="bg-white p-4 rounded-lg shadow-md mb-4 space-y-4">
-                                <!-- Hàng 1: Filters -->
                                 <div class="flex flex-wrap gap-4 items-center">
                                     <input type="text" id="ct-search" placeholder="Tìm kiếm chung..." class="flex-grow px-3 py-2 border rounded-md" style="min-width: 200px;">
                                     <div class="flex items-center gap-2">
@@ -314,7 +288,6 @@
                                     </div>
                                     <button id="ct-reset-filters" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md">Xóa Lọc</button>
                                 </div>
-                                <!-- Hàng 2: Actions -->
                                 <div class="flex gap-2 flex-wrap border-t pt-4">
                                     <button id="ct-btn-excel" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">Excel</button>
                                     <button id="ct-btn-pdf" class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded-md">PDF</button>
@@ -322,7 +295,6 @@
                             </div>
                         </div>
 
-                        <!-- Table Area -->
                         <div class="flex-grow bg-white rounded-lg shadow-md overflow-hidden">
                             <div class="table-container">
                                 <table class="min-w-full divide-y divide-gray-200">
@@ -343,7 +315,6 @@
                             </div>
                         </div>
 
-                        <!-- Pagination -->
                         <div class="flex-shrink-0 flex flex-col md:flex-row justify-between items-center mt-4 p-4 bg-white rounded-lg shadow-md">
                             <span id="ct-pagination-info" class="text-sm text-gray-600 mb-2 md:mb-0"></span>
                             <div class="flex items-center gap-2 flex-wrap">
@@ -360,11 +331,9 @@
                     </div>
 
 
-                    <!-- View 4: Cài Đặt -->
                     <div id="view-cai-dat" class="app-view hidden">
                         <h1 class="text-3xl font-bold text-gray-800 mb-6">Cài Đặt</h1>
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <!-- Cột trái: Thông tin cá nhân -->
                             <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-md">
                                 <h2 class="text-xl font-semibold mb-4 text-gray-800">Thông tin cá nhân</h2>
                                 <form id="profile-form" class="space-y-4">
@@ -376,11 +345,9 @@
                                 </form>
                                 <hr class="my-6"><button id="logout-btn" class="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>Đăng xuất</button>
                             </div>
-                            <!-- Cột phải: Quản lý nhân viên (Chỉ Admin) -->
                             <div id="admin-panel" class="hidden lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
                                 <h2 class="text-xl font-semibold mb-4 text-gray-800">Quản lý nhân viên</h2>
                                 <div id="user-list-body" class="space-y-4">
-                                    <!-- User cards will be injected here by JS -->
                                 </div>
                             </div>
                         </div>
@@ -390,18 +357,15 @@
         </div>
     </div>
     
-    <!-- Custom Filter Popover (Template) -->
     <div id="filter-popover-template" class="filter-popover hidden">
         <input type="text" class="filter-search-input w-full px-2 py-1 border rounded-md" placeholder="Tìm kiếm...">
         <div class="filter-options-list space-y-1 p-1">
-            <!-- Options will be injected here -->
         </div>
         <div class="text-right mt-2">
             <button class="filter-apply-btn bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-1 px-3 rounded-md">Áp dụng</button>
         </div>
     </div>
 
-    <!-- Modal Đơn Hàng -->
     <div id="don-hang-modal" class="fixed inset-0 z-50 flex items-center justify-center overflow-auto modal-backdrop hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-6xl m-4 h-[90vh] flex flex-col">
             <form id="don-hang-form" class="p-6 flex flex-col flex-grow overflow-hidden">
@@ -409,7 +373,6 @@
                 <input type="hidden" id="don-hang-edit-mode-ma-nx">
                 <input type="hidden" id="dh-modal-anh-yc-url-hien-tai">
 
-                <!-- Thông tin chung -->
                 <div class="space-y-4 mb-4 border-b pb-4 flex-shrink-0">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div><label for="dh-thoi-gian" class="block text-sm font-medium text-gray-700">Thời Gian</label><input type="date" id="dh-thoi-gian" required class="mt-1 block w-full border rounded-md p-2"></div>
@@ -422,7 +385,6 @@
                         <div><label for="dh-ghi-chu" class="block text-sm font-medium text-gray-700">Ghi Chú</label><textarea id="dh-ghi-chu" rows="1" class="mt-1 block w-full border rounded-md p-2"></textarea></div>
                     </div>
                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                        <!-- Image Upload Section -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Ảnh Yêu Cầu</label>
                             <div class="flex items-center space-x-4">
@@ -445,13 +407,10 @@
                         </div>
                     </div>
                 </div>
-                <!-- Danh sách sản phẩm -->
                 <h4 class="text-lg font-medium text-gray-800 mb-2 flex-shrink-0">Danh sách sản phẩm</h4>
                 <div id="dh-item-list" class="space-y-3 overflow-y-auto pr-2 flex-grow">
-                    <!-- Item rows will be injected here -->
                 </div>
                 <button type="button" id="add-dh-item-btn" class="mt-3 text-blue-600 hover:text-blue-800 text-sm font-medium self-start flex-shrink-0">+ Thêm sản phẩm</button>
-                <!-- Actions -->
                 <div class="mt-6 flex justify-end space-x-3 flex-shrink-0">
                     <button type="button" id="cancel-dh-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-md">Hủy</button>
                     <button type="submit" id="save-dh-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Lưu Đơn Hàng</button>
@@ -460,7 +419,6 @@
         </div>
     </div>
     
-    <!-- Modal Sản Phẩm -->
     <div id="san-pham-modal" class="fixed inset-0 z-50 flex items-center justify-center overflow-auto modal-backdrop hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-lg m-4">
             <form id="san-pham-form" class="p-6">
@@ -468,7 +426,6 @@
                 <input type="hidden" id="sp-edit-mode-ma-sp">
                 <input type="hidden" id="sp-modal-hinh-anh-url-hien-tai">
                 <div class="space-y-4">
-                    <!-- Image Upload Section -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Hình Ảnh Sản Phẩm</label>
                         <div class="flex items-center space-x-4">
@@ -485,7 +442,6 @@
                              <p class="text-xs text-gray-500 self-center">Click vào ô, rồi dán (Ctrl+V) hoặc chọn file.</p>
                         </div>
                     </div>
-                    <!-- Other Fields -->
                     <div>
                         <label for="sp-modal-ma-sp" class="block text-sm font-medium text-gray-700">Mã Sản Phẩm</label>
                         <input type="text" id="sp-modal-ma-sp" required class="mt-1 block w-full border rounded-md p-2">
@@ -502,11 +458,9 @@
                         <label for="sp-modal-phu-trach" class="block text-sm font-medium text-gray-700">Phụ Trách</label>
                         <input type="text" id="sp-modal-phu-trach" list="phu-trach-list" required class="mt-1 block w-full border rounded-md p-2">
                         <datalist id="phu-trach-list">
-                            <!-- Options will be populated by JS -->
                         </datalist>
                     </div>
                 </div>
-                <!-- Actions -->
                 <div class="mt-6 flex justify-end space-x-3">
                     <button type="button" id="cancel-sp-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-md">Hủy</button>
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Lưu</button>
@@ -515,7 +469,6 @@
         </div>
     </div>
     
-    <!-- Image Viewer Modal -->
     <div id="image-viewer-modal" class="fixed inset-0 z-[60] flex items-center justify-center modal-backdrop hidden">
         <div class="relative bg-white rounded-lg shadow-xl m-4 p-4">
             <button id="close-image-viewer-btn" class="absolute -top-3 -right-3 bg-red-600 text-white rounded-full p-1.5 focus:outline-none hover:bg-red-700 z-10">
@@ -526,12 +479,10 @@
     </div>
 
 
-    <!-- Modal Đặt lại Mật khẩu (Admin) -->
     <div id="password-reset-modal" class="fixed inset-0 z-50 flex items-center justify-center overflow-auto modal-backdrop hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md m-4 p-6"><h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Đặt lại mật khẩu</h3><form id="password-reset-form"><input type="hidden" id="reset-user-gmail"><p class="mb-2 text-sm text-gray-700">Bạn đang đặt lại mật khẩu cho: <strong id="reset-user-gmail-display"></strong></p><div><label for="reset-new-password" class="block text-sm font-medium text-gray-700">Mật khẩu mới</label><input type="password" id="reset-new-password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div><div class="mt-6 flex justify-end space-x-3"><button type="button" id="cancel-reset-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-md">Hủy</button><button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md">Đặt lại</button></div></form></div>
     </div>
     
-    <!-- Custom Confirm Modal -->
     <div id="confirm-modal" class="fixed inset-0 z-[60] flex items-center justify-center modal-backdrop hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md m-4 p-6">
             <h3 id="confirm-title" class="text-lg font-medium leading-6 text-gray-900 mb-2">Xác nhận hành động</h3>
@@ -543,7 +494,6 @@
         </div>
     </div>
 
-    <!-- Export Options Modal -->
     <div id="export-modal" class="fixed inset-0 z-[60] flex items-center justify-center modal-backdrop hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md m-4 p-6">
             <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Tùy chọn xuất file</h3>
@@ -555,17 +505,14 @@
         </div>
     </div>
 
-    <!-- Spinner/Loading overlay -->
     <div id="loading-overlay" class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop hidden">
         <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
     </div>
 
-    <!-- Trạng thái tải ban đầu -->
     <div id="app-loading" class="flex items-center justify-center min-h-screen">
         <p class="text-gray-600 text-lg">Đang kiểm tra phiên đăng nhập...</p>
     </div>
 
-    <!-- SCRIPT -->
-    <script type="module" src="app.js"></script>
+    <script type="module" src="app.min.js"></script>
 </body>
 </html>

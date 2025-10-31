@@ -25,6 +25,7 @@ let activeProductDropdown = null;
 let selectedImageFile = null; // Biến tạm để lưu file ảnh sản phẩm đã chọn
 let selectedYcImageFile = null; // Biến tạm để lưu file ảnh yêu cầu đã chọn
 let currentEditingOrderItems = []; // Lưu các item gốc khi sửa đơn hàng
+let realtimeChannel = null; // Biến cho kênh realtime
 
 const PLACEHOLDER_IMAGE_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9IiNGRkZGRkYiIHN0cm9rZT0iI2RlZDJkNiIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2UtbGluZWNhcD0icm9ybmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ"tnIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ4PSIyIj48L3JlY3Q+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiIGZpbGw9IiNkZWQyZDYiIHN0cm9rZT0ibm9uZSI+PC9jaXJjbGU+PHBvbHlsaW5lIHBvaW50cz0iMjEgMTUgMTYgMTAgNCAxNCI+PC9wb2x5bGluZT48L3N2Zz4=';
 
@@ -186,6 +187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         applyPermissions(user);
         await loadInitialData();
+        setupRealtimeSubscriptions(); // NÂNG CẤP: Kích hoạt Realtime
         
         document.getElementById('app-loading').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
@@ -255,6 +257,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 
+    // --- NÂNG CẤP: LOGIC REALTIME ---
+    function setupRealtimeSubscriptions() {
+        // Hủy đăng ký kênh cũ nếu có
+        if (realtimeChannel) {
+            sb.removeChannel(realtimeChannel);
+        }
+
+        // Hàm xử lý chung khi có thay đổi
+        const handleRealtimeUpdate = async (message) => {
+            console.log('Realtime update received:', message);
+            showToast(message, 'info');
+            // Tải lại dữ liệu cho bộ lọc và cache
+            await loadInitialData();
+            // Tải lại dữ liệu cho view hiện tại
+            await loadDataForCurrentView();
+        };
+
+        realtimeChannel = sb.channel('public-db-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'san_pham' }, 
+                (payload) => {
+                    let msg = 'Bảng sản phẩm vừa được cập nhật.';
+                    if (payload.eventType === 'INSERT') msg = `Sản phẩm mới: ${payload.new.ma_sp}`;
+                    if (payload.eventType === 'DELETE') msg = `Sản phẩm ${payload.old.ma_sp} đã bị xóa.`;
+                    handleRealtimeUpdate(msg);
+                }
+            )
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'don_hang' },
+                (payload) => handleRealtimeUpdate('Danh sách đơn hàng vừa được cập nhật.')
+            )
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'chi_tiet' },
+                // Thay đổi chi tiết sẽ ảnh hưởng đến tồn kho, nên cần cập nhật
+                (payload) => handleRealtimeUpdate('Dữ liệu kho vừa được cập nhật.')
+            )
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('Đã kết nối Realtime thành công!');
+                }
+                 if (status === 'CHANNEL_ERROR') {
+                    console.error('Lỗi kết nối Realtime, đang thử lại...');
+                }
+            });
+    }
+
     function applyPermissions(user) {
         const isAdmin = user.phan_quyen === 'Admin';
         document.getElementById('admin-panel').classList.toggle('hidden', !isAdmin);
@@ -267,6 +312,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function handleLogout() {
+        if(realtimeChannel) {
+            sb.removeChannel(realtimeChannel); // Hủy đăng ký khi logout
+        }
         sessionStorage.clear();
         window.location.href = 'login.html';
     }
@@ -629,8 +677,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (error) throw error;
             showToast(`Lưu sản phẩm thành công!`, 'success');
             document.getElementById('san-pham-modal').classList.add('hidden');
-            await loadInitialData(); // Tải lại dữ liệu nền
-            await fetchSanPham();
+            // No need to fetch data here, realtime will handle it
         } catch (error) {
             console.error("Lỗi lưu sản phẩm:", error);
             if (error.code === '23505') { // Unique constraint violation
@@ -680,7 +727,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error("Lỗi xóa sản phẩm:", error);
             showToast(error.message, 'error');
         } finally {
-            await fetchSanPham();
+            // No need to fetch, realtime will handle it
             showLoading(false);
         }
     }
@@ -842,7 +889,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (deleteDonHangError) throw deleteDonHangError;
 
             showToast(`Đã xóa ${selectedIds.length} đơn hàng.`, 'success');
-            await fetchDonHang();
         } catch (error) {
             showToast(`Lỗi khi xóa đơn hàng: ${error.message}`, 'error');
         } finally {
@@ -1226,8 +1272,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             showToast("Lưu đơn hàng thành công!", 'success');
             document.getElementById('don-hang-modal').classList.add('hidden');
-            await fetchDonHang();
-            await loadInitialData(); // Reload stock info
         } catch (error) {
             showToast(`Lỗi lưu đơn hàng: ${error.message}`, 'error');
         } finally {
