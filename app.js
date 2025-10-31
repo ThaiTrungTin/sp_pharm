@@ -24,6 +24,7 @@ let activeFilterPopover = null;
 let activeProductDropdown = null;
 let selectedImageFile = null; // Biến tạm để lưu file ảnh sản phẩm đã chọn
 let selectedYcImageFile = null; // Biến tạm để lưu file ảnh yêu cầu đã chọn
+let currentEditingOrderItems = []; // Lưu các item gốc khi sửa đơn hàng
 
 const PLACEHOLDER_IMAGE_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9IiNGRkZGRkYiIHN0cm9rZT0iI2RlZDJkNiIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2UtbGluZWNhcD0icm9ybmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ"tnIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ4PSIyIj48L3JlY3Q+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiIGZpbGw9IiNkZWQyZDYiIHN0cm9rZT0ibm9uZSI+PC9jaXJjbGU+PHBvbHlsaW5lIHBvaW50cz0iMjEgMTUgMTYgMTAgNCAxNCI+PC9wb2x5bGluZT48L3N2Zz4=';
 
@@ -449,7 +450,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         closeActiveFilterPopover();
         
         const filterKey = btnElement.dataset.filterKey;
-        // ** SỬA LỖI: Truy cập đúng key của viewStates **
         const viewState = viewStates[viewName]; 
         if (!viewState) {
             console.error(`Không tìm thấy state cho view: ${viewName}`);
@@ -560,19 +560,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         modal.classList.remove('hidden');
     }
 
-    // *** SỬA LỖI: HÀM "LÀM SẠCH" TÊN FILE ***
     function sanitizeFileName(fileName) {
         const lastDot = fileName.lastIndexOf('.');
         const nameWithoutExt = fileName.slice(0, lastDot);
         const ext = fileName.slice(lastDot);
 
         return nameWithoutExt
-            .normalize('NFD') // Tách ký tự và dấu (e.g., 'á' -> 'a' + '´')
-            .replace(/[\u0300-\u036f]/g, '') // Xóa các dấu
-            .toLowerCase() // Chuyển thành chữ thường
-            .replace(/\s+/g, '-') // Thay dấu cách bằng gạch ngang
-            .replace(/[^a-z0-9-]/g, '') + // Xóa các ký tự không hợp lệ
-            ext; // Gắn lại phần mở rộng
+            .normalize('NFD') 
+            .replace(/[\u0300-\u036f]/g, '') 
+            .toLowerCase() 
+            .replace(/\s+/g, '-') 
+            .replace(/[^a-z0-9-]/g, '') + 
+            ext; 
     }
 
     async function handleSaveSanPham(e) {
@@ -760,8 +759,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(dh.thoi_gian)}</td>
                         <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${dh.loai_don === 'Nhập' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${dh.loai_don}</span></td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${dh.yeu_cau}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500 truncate" title="${dh.muc_dich || ''}">${dh.muc_dich || ''}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500 truncate" title="${dh.ghi_chu || ''}">${dh.ghi_chu || ''}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500 break-words" title="${dh.muc_dich || ''}">${dh.muc_dich || ''}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500 break-words" title="${dh.ghi_chu || ''}">${dh.ghi_chu || ''}</td>
                         <td class="px-6 py-4 text-center">${imageYcHtml}</td>
                         <td class="px-6 py-4 text-center">${mailHtml}</td>
                     </tr>
@@ -955,6 +954,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const soLuong = parseInt(soLuongInput.value) || 0;
         const infoDiv = row.querySelector('.dh-item-info');
         const loaiDon = document.getElementById('dh-loai-don-modal').value;
+        const isEdit = !!document.getElementById('don-hang-edit-mode-ma-nx').value;
 
         const sp = cache.sanPhamList.find(p => p.ma_sp === maSp);
         if (!sp) {
@@ -962,13 +962,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const tonKho = sp.ton_cuoi;
-        let infoText = `Tồn kho: ${tonKho}`;
+        let tonKhoHienTai = sp.ton_cuoi;
+        
+        // ** SỬA LỖI TỒN KHO KHI EDIT **
+        // Nếu đang sửa đơn hàng, phải "hoàn trả" số lượng của sản phẩm này trong đơn hàng cũ
+        // để có được tồn kho chính xác *trước khi* thực hiện đơn hàng này.
+        if (isEdit) {
+            const originalItem = currentEditingOrderItems.find(item => item.ma_sp === maSp);
+            if (originalItem) {
+                if (loaiDon === 'Nhập') {
+                    tonKhoHienTai -= originalItem.so_luong; // Trừ đi số đã nhập để về trạng thái cũ
+                } else { // Xuất
+                    tonKhoHienTai += originalItem.so_luong; // Cộng lại số đã xuất để về trạng thái cũ
+                }
+            }
+        }
+        
+        let infoText = `Tồn kho: ${tonKhoHienTai}`;
         if (soLuong > 0) {
             if (loaiDon === 'Nhập') {
-                infoText += ` | Sau nhập: ${tonKho + soLuong}`;
+                infoText += ` | Sau nhập: ${tonKhoHienTai + soLuong}`;
             } else {
-                const conLai = tonKho - soLuong;
+                const conLai = tonKhoHienTai - soLuong;
                 infoText += ` | Sau xuất: <span class="${conLai < 0 ? 'text-red-600 font-bold' : ''}">${conLai}</span>`;
             }
         }
@@ -987,8 +1002,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const form = document.getElementById('don-hang-form');
         form.reset();
         document.getElementById('dh-item-list').innerHTML = '';
-        selectedYcImageFile = null; // Reset file ảnh YC
-        
+        selectedYcImageFile = null; 
+        currentEditingOrderItems = []; // Reset item gốc
+
         const isEdit = !!dh;
         const title = readOnly 
             ? `Chi Tiết Đơn Hàng: ${dh.ma_nx}` 
@@ -1017,8 +1033,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('dh-muc-dich').value = dh.muc_dich || '';
             document.getElementById('dh-ghi-chu').value = dh.ghi_chu || '';
             document.getElementById('dh-mail-url').value = dh.mail_url || '';
-
-            // Handle image YC
             currentImageUrlInput.value = dh.anh_yc_url || '';
             imagePreview.src = dh.anh_yc_url || PLACEHOLDER_IMAGE_URL;
 
@@ -1029,6 +1043,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showToast("Không thể tải chi tiết đơn hàng.", 'error');
                 return;
             }
+            
+            currentEditingOrderItems = items; // Lưu lại item gốc để tính toán tồn kho
+            
             if (items.length > 0) {
                 items.forEach(item => addDonHangItemRow(item));
             } else {
@@ -1044,7 +1061,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             generateMaNX();
             loaiDonSelect.onchange = generateMaNX;
             addDonHangItemRow();
-            // Reset image YC for new order
             currentImageUrlInput.value = '';
             imagePreview.src = PLACEHOLDER_IMAGE_URL;
         }
@@ -1077,7 +1093,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <input type="text" class="dh-item-ten-sp w-full border rounded-md p-2 bg-gray-100" readonly placeholder="Tên SP">
             </div>
             <div class="col-span-1">
-                <input type="number" min="1" class="dh-item-so-luong w-full border rounded-md p-2" required placeholder="SL">
+                <input type="number" min="0" class="dh-item-so-luong w-full border rounded-md p-2" required placeholder="SL">
             </div>
             <div class="col-span-1 text-right">
                 <button type="button" class="remove-dh-item-btn text-red-500 hover:text-red-700">Xóa</button>
@@ -1123,20 +1139,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         for (const row of itemRows) {
             const ma_sp = row.querySelector('.dh-item-ma-sp').value;
-            const so_luong = parseInt(row.querySelector('.dh-item-so-luong').value);
-            if (!ma_sp || !so_luong || so_luong <= 0) {
-                showToast("Vui lòng điền đầy đủ thông tin cho tất cả sản phẩm.", 'error');
+            const so_luong_val = parseInt(row.querySelector('.dh-item-so-luong').value);
+
+            // ** SỬA LỖI VALIDATION SỐ LƯỢNG **
+            if (!ma_sp || isNaN(so_luong_val) || so_luong_val < 0) {
+                showToast("Vui lòng điền đầy đủ Mã SP và Số lượng hợp lệ (>= 0) cho tất cả sản phẩm.", 'error');
                 return;
             }
+            
             const sp = cache.sanPhamList.find(p => p.ma_sp === ma_sp);
             if (!sp) {
                 showToast(`Sản phẩm với mã "${ma_sp}" không hợp lệ.`, 'error');
                 return;
             }
-            if (donHangData.loai_don === 'Xuất' && so_luong > sp.ton_cuoi) {
-                showToast(`Số lượng xuất của SP "${ma_sp}" vượt quá tồn kho (${sp.ton_cuoi}).`, 'error');
+
+            // Tính toán lại tồn kho để kiểm tra
+            let tonKhoTruocGiaoDich = sp.ton_cuoi;
+            if (isEdit) {
+                 const originalItem = currentEditingOrderItems.find(item => item.ma_sp === ma_sp);
+                 if (originalItem) {
+                    tonKhoTruocGiaoDich += (donHangData.loai_don === 'Nhập' ? -originalItem.so_luong : originalItem.so_luong);
+                 }
+            }
+
+            if (donHangData.loai_don === 'Xuất' && so_luong_val > tonKhoTruocGiaoDich) {
+                showToast(`Số lượng xuất của SP "${ma_sp}" vượt quá tồn kho (${tonKhoTruocGiaoDich}).`, 'error');
                 return;
             }
+
             chiTietDataList.push({
                 id: crypto.randomUUID(),
                 ma_nx: donHangData.ma_nx,
@@ -1144,7 +1174,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 loai: donHangData.loai_don,
                 ma_sp,
                 ten_sp: sp.ten_sp,
-                so_luong,
+                so_luong: so_luong_val,
                 muc_dich: donHangData.muc_dich,
                 phu_trach: sp.phu_trach,
             });
@@ -1471,10 +1501,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function handleRoleChange(e) {
         const gmail = e.target.dataset.gmail;
         const newRole = e.target.value;
+        const originalRole = cache.userList.find(u => u.gmail === gmail)?.phan_quyen;
         
+        if (!originalRole) return;
+
         const confirmed = await showConfirm(`Bạn có muốn đổi quyền của ${gmail} thành ${newRole}?`);
         if (!confirmed) {
-            e.target.value = cache.userList.find(u => u.gmail === gmail).phan_quyen; // Revert
+            e.target.value = originalRole; // Revert
             return;
         }
 
@@ -1483,9 +1516,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         showLoading(false);
         if (error) {
             showToast("Đổi quyền thất bại.", 'error');
+            e.target.value = originalRole; // Revert on failure
         } else {
             showToast("Đổi quyền thành công.", 'success');
-            await fetchUsers();
+            await fetchUsers(); // Refresh the list to update the cache
         }
     }
     
