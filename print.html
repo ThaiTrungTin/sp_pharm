@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>In Đơn Hàng</title>
+    <!-- Tải Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tải Supabase client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Thư viện xuất PDF (jsPDF & html2pdf) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Thư viện tạo mã QR -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        @media print {
+            body { margin: 0; }
+            #action-buttons { display: none; }
+            .page-container {
+                box-shadow: none !important;
+                margin: 0 !important;
+                border: none !important;
+            }
+        }
+        .page-container {
+            width: 210mm; /* A4 width */
+            min-height: 297mm; /* A4 height */
+            padding: 20mm 15mm;
+            margin: 20px auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-200">
+
+    <!-- Các nút hành động, sẽ bị ẩn khi in -->
+    <div id="action-buttons" class="fixed top-4 left-4 z-50 flex gap-3">
+        <button id="print-btn" disabled class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md disabled:opacity-50 disabled:cursor-wait">In Phiếu</button>
+        <button id="pdf-btn" disabled class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded-md disabled:opacity-50 disabled:cursor-wait">Xuất PDF</button>
+    </div>
+
+    <!-- Nội dung phiếu in -->
+    <div id="print-content" class="page-container">
+        <!-- Header -->
+        <header class="grid grid-cols-3 items-start mb-8">
+            <div class="col-span-1">
+                <!-- Trống -->
+            </div>
+            <div class="col-span-1 text-center">
+                <h1 id="phieu-title" class="text-2xl font-bold uppercase">PHIẾU ...</h1>
+                <p id="phieu-ngay" class="text-sm whitespace-nowrap">Ngày ... - Kho B4</p>
+            </div>
+            <div class="col-span-1 flex flex-col items-end">
+                <div id="qrcode" class="w-20 h-20 mb-1"></div>
+                <p id="phieu-ma-so" class="text-sm font-semibold"> ...</p>
+            </div>
+        </header>
+
+        <!-- Thông tin chi tiết -->
+        <section class="mb-6 text-sm">
+            <p><strong class="font-semibold">Người yêu cầu:</strong> <span id="info-yeu-cau">...</span></p>
+            <p><strong class="font-semibold">Mục đích:</strong> <span id="info-muc-dich">...</span></p>
+            <p><strong class="font-semibold">Ghi chú:</strong> <span id="info-ghi-chu">...</span></p>
+        </section>
+
+        <!-- Bảng sản phẩm -->
+        <section class="mb-12">
+            <table class="w-full border-collapse border border-gray-400 text-sm">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="border border-gray-400 p-2 text-center" style="width: 10%;">STT</th>
+                        <th class="border border-gray-400 p-2 text-center" style="width: 25%;">Mã Sản Phẩm</th>
+                        <th class="border border-gray-400 p-2 text-center" style="width: 45%;">Tên Sản Phẩm</th>
+                        <th class="border border-gray-400 p-2 text-center" style="width: 20%;">Số Lượng</th>
+                    </tr>
+                </thead>
+                <tbody id="product-table-body">
+                    <!-- Dữ liệu sẽ được chèn vào đây -->
+                </tbody>
+                <tfoot>
+                    <tr class="font-bold">
+                        <td colspan="3" class="border border-gray-400 p-2 text-right">Tổng cộng:</td>
+                        <td id="total-quantity" class="border border-gray-400 p-2 text-center">0</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </section>
+
+        <!-- Chữ ký -->
+        <footer class="flex justify-between items-start pt-16 text-center text-sm">
+            <div>
+                <p class="font-bold">Thủ Kho</p>
+                <p class="italic">(Ký, ghi rõ họ tên)</p>
+            </div>
+            <div>
+                <p class="font-bold">Người nhận hàng</p>
+                <p class="italic">(Ký, ghi rõ họ tên)</p>
+            </div>
+        </footer>
+    </div>
+    
+    <script type="module">
+        const { createClient } = supabase;
+        const SUPABASE_URL = 'https://qnqtkknzqewesxjoudhr.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFucXRra256cWV3ZXN4am91ZGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3NTE0NzAsImV4cCI6MjA3NzMyNzQ3MH0.3FnZe-lvrI9N2rwZT7Knd5Ab_Rxi5xJ5KeIMMgKD8zQ';
+        const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const formatDate = (dateString) => {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const day = String(date.getDate());
+            const month = String(date.getMonth() + 1);
+            const year = date.getFullYear();
+            return `Ngày ${day} tháng ${month} năm ${year}`;
+        };
+
+        async function loadOrderDetails() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const ma_nx = urlParams.get('ma_nx');
+
+            if (!ma_nx) {
+                document.getElementById('print-content').innerHTML = '<p class="text-center text-red-500 font-bold">Không tìm thấy mã đơn hàng.</p>';
+                return;
+            }
+
+            const { data: donHang, error: dhError } = await sb.from('don_hang').select('*').eq('ma_nx', ma_nx).single();
+            if (dhError || !donHang) {
+                document.getElementById('print-content').innerHTML = `<p class="text-center text-red-500 font-bold">Lỗi khi tải đơn hàng: ${dhError?.message || 'Không tìm thấy'}</p>`;
+                return;
+            }
+
+            const { data: chiTiet, error: ctError } = await sb.from('chi_tiet').select('*').eq('ma_nx', ma_nx);
+            if (ctError) {
+                document.getElementById('print-content').innerHTML = `<p class="text-center text-red-500 font-bold">Lỗi khi tải chi tiết sản phẩm: ${ctError.message}</p>`;
+                return;
+            }
+
+            // Populate header
+            document.title = `In Phiếu ${donHang.ma_nx}`;
+            document.getElementById('phieu-title').textContent = `PHIẾU ${donHang.loai_don.toUpperCase()} KHO`;
+            document.getElementById('phieu-ngay').textContent = `${formatDate(donHang.thoi_gian)} - Kho B4`;
+            document.getElementById('phieu-ma-so').textContent = ` ${donHang.ma_nx}`;
+            
+            // Generate QR Code
+            new QRCode(document.getElementById("qrcode"), {
+                text: window.location.href,
+                width: 80,
+                height: 80,
+            });
+
+            // Populate info
+            document.getElementById('info-yeu-cau').textContent = donHang.yeu_cau || 'N/A';
+            document.getElementById('info-muc-dich').textContent = donHang.muc_dich || 'N/A';
+            document.getElementById('info-ghi-chu').textContent = donHang.ghi_chu || 'N/A';
+
+            // Populate table
+            const tableBody = document.getElementById('product-table-body');
+            tableBody.innerHTML = '';
+            let total = 0;
+            chiTiet.forEach((item, index) => {
+                tableBody.innerHTML += `
+                    <tr>
+                        <td class="border border-gray-400 p-2 text-center">${index + 1}</td>
+                        <td class="border border-gray-400 p-2">${item.ma_sp}</td>
+                        <td class="border border-gray-400 p-2">${item.ten_sp || ''}</td>
+                        <td class="border border-gray-400 p-2 text-center">${item.so_luong}</td>
+                    </tr>
+                `;
+                total += item.so_luong;
+            });
+            document.getElementById('total-quantity').textContent = total;
+
+            // Kích hoạt các nút sau khi tải xong
+            // Thêm một độ trễ nhỏ để đảm bảo QR code đã được render hoàn toàn
+            setTimeout(() => {
+                document.getElementById('print-btn').disabled = false;
+                document.getElementById('pdf-btn').disabled = false;
+            }, 500);
+        }
+
+        // Gắn sự kiện cho các nút
+        document.getElementById('print-btn').addEventListener('click', () => window.print());
+
+        document.getElementById('pdf-btn').addEventListener('click', () => {
+            const element = document.getElementById('print-content');
+            const ma_nx = new URLSearchParams(window.location.search).get('ma_nx');
+            const opt = {
+                margin:       0,
+                filename:     `Phieu_${ma_nx}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().from(element).set(opt).save();
+        });
+
+        // Tải dữ liệu khi trang được mở
+        loadOrderDetails();
+    </script>
+
+</body>
+</html>
