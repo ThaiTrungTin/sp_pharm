@@ -1,0 +1,80 @@
+<div id="view-chi-tiet" class="app-view flex flex-col h-full">
+    <div class="flex-shrink-0">
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4">Chi Tiết Nhập Xuất</h1>
+        <div class="bg-white p-4 rounded-lg shadow-md mb-4 space-y-4">
+            <div class="flex flex-wrap gap-4 items-center">
+                <input type="text" id="ct-search" placeholder="Tìm kiếm chung..." class="flex-grow px-3 py-2 border rounded-md" style="min-width: 200px;">
+                <div class="flex items-center gap-2">
+                    <label for="ct-filter-thoi-gian-from" class="text-sm">Từ:</label>
+                    <input type="date" id="ct-filter-thoi-gian-from" class="px-3 py-1.5 border rounded-md">
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="ct-filter-thoi-gian-to" class="text-sm">Đến:</label>
+                    <input type="date" id="ct-filter-thoi-gian-to" class="px-3 py-1.5 border rounded-md">
+                </div>
+                <select id="ct-filter-loai-don" class="px-3 py-2 border rounded-md bg-white">
+                    <option value="">-- Loại Đơn --</option>
+                    <option value="Nhập">Nhập</option>
+                    <option value="Xuất">Xuất</option>
+                </select>
+                <div class="relative">
+                    <button id="ct-filter-ma-nx-btn" data-filter-key="ma_nx" class="filter-btn w-full text-left px-3 py-2 border rounded-md bg-white">-- Mã NX --</button>
+                </div>
+                 <div class="relative">
+                    <button id="ct-filter-ma-sp-btn" data-filter-key="ma_sp" class="filter-btn w-full text-left px-3 py-2 border rounded-md bg-white">-- Mã SP --</button>
+                </div>
+                 <div class="relative">
+                    <button id="ct-filter-ten-sp-btn" data-filter-key="ten_sp" class="filter-btn w-full text-left px-3 py-2 border rounded-md bg-white">-- Tên SP --</button>
+                </div>
+                 <div class="relative">
+                    <button id="ct-filter-phu-trach-btn" data-filter-key="phu_trach" class="filter-btn w-full text-left px-3 py-2 border rounded-md bg-white">-- Phụ Trách --</button>
+                </div>
+                <button id="ct-reset-filters" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md">Xóa Lọc</button>
+            </div>
+            <div class="flex justify-between items-center gap-2 flex-wrap border-t pt-4">
+                <div class="flex-1"></div>
+                <div id="ct-summary-info" class="flex-1 text-center font-semibold text-gray-700 text-sm md:text-base">
+                    <!-- Summary content will be injected by JS -->
+                </div>
+                <div class="flex-1 flex justify-end gap-2">
+                    <button id="ct-btn-excel" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">Excel</button>
+                    <button id="ct-btn-pdf" class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded-md">PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-grow bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="table-container">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 10%;">Mã NX</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 10%;">Thời Gian</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 5%;">Loại</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 15%;">Mã SP</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 20%;">Tên SP</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 5%;">SL</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 25%;">Mục Đích</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 10%;">Phụ Trách</th>
+                    </tr>
+                </thead>
+                <tbody id="ct-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="flex-shrink-0 flex flex-col md:flex-row justify-between items-center mt-4 p-4 bg-white rounded-lg shadow-md">
+        <span id="ct-pagination-info" class="text-sm text-gray-600 mb-2 md:mb-0"></span>
+        <div class="flex items-center gap-2 flex-wrap">
+            <select id="ct-items-per-page" class="px-3 py-1 border rounded-md bg-white">
+                <option value="50">50 / trang</option>
+                <option value="100">100 / trang</option>
+                <option value="200">200 / trang</option>
+                <option value="all">Toàn bộ</option>
+            </select>
+            <button id="ct-prev-page" class="px-3 py-1 border rounded-md bg-white">Trước</button>
+            <button id="ct-next-page" class="px-3 py-1 border rounded-md bg-white">Sau</button>
+        </div>
+    </div>
+</div>
